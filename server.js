@@ -41,6 +41,7 @@ const wss    = new WebSocketServer({ server });
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'atomic.html')));
 
 // ── WebSocket ─────────────────────────────────────────────────────────────
 const gameSubs = new Map(); // gameId → Set<ws>
