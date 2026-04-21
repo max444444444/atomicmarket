@@ -214,7 +214,12 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
 .tx-amt{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;margin-left:12px}
 
 /* ── Live board ── */
-.board-wrap{border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--bd1);margin-bottom:1rem;background:#1a1a1a}
+.board-wrap{border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--bd1);margin-bottom:1rem;background:#1a1a1a;padding:6px}
+.chess-board{width:100%;border-spacing:0;border-collapse:collapse;table-layout:fixed;display:block}
+.chess-board td{padding:0;aspect-ratio:1;text-align:center;vertical-align:middle;font-size:clamp(16px,3.8vw,42px);user-select:none;line-height:1}
+.sq-l{background:#f0d9b5}.sq-d{background:#b58863}
+.pc-w{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.95),0 0 1px #000}
+.pc-b{color:#1a1a1a;text-shadow:0 1px 2px rgba(255,255,255,0.25)}
 
 /* ── Toast ── */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(8px);
@@ -310,7 +315,7 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
     <div id="game-board-wrap" style="display:none">
       <div class="section-lbl" style="margin-bottom:8px">Live board</div>
       <div class="board-wrap">
-        <iframe id="game-iframe" src="" width="100%" style="aspect-ratio:1;border:0;display:block;max-height:480px" allowtransparency="true"></iframe>
+        <div id="board-canvas" style="max-width:480px;margin:0 auto"></div>
       </div>
     </div>
 
@@ -404,6 +409,7 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
 <div class="toast" id="toast"></div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
 <script>
 const ADMIN = 'ecc_official';
 
@@ -595,6 +601,7 @@ function doSignout() {
   currentUser = null; sessionToken = null; currentGameId = null; currentGameMeta = null;
   userBalance = 0; tradeHistory = [];
   if (pollInterval) clearInterval(pollInterval);
+  if (boardStreamController) boardStreamController.abort();
   document.getElementById('game-section').style.display = 'none';
   clearMsg('game-status');
   saveSession();
@@ -688,7 +695,7 @@ async function loadGame(game) {
   wsSubscribe(game.id);
   document.getElementById('game-section').style.display = 'block';
   document.getElementById('game-board-wrap').style.display = 'block';
-  document.getElementById('game-iframe').src = `https://lichess.org/embed/game/${game.id}?bg=dark&theme=brown`;
+  startBoardStream(game.id, game.moves || '');
   selContract('white');
   renderAll();
   pollInterval = setInterval(() => pollGame(game.id), 5000);
@@ -699,10 +706,11 @@ async function pollGame(id) {
     const res = await fetch(`https://lichess.org/api/game/${id}?moves=true`, { headers: { Accept: 'application/json' } });
     if (!res.ok) return;
     const g = await res.json();
-    const moves = g.moves ? g.moves.trim().split(' ') : [];
+    const moves = g.moves ? g.moves.trim().split(' ').filter(Boolean) : [];
     if (moves.length !== moveNum) {
       moveNum = moves.length;
       document.getElementById('move-tag').textContent = 'move ' + Math.ceil(moveNum / 2);
+      updateBoard(g.moves || ''); // fallback board update if stream dropped
       updateMids(); renderBook(); renderCards();
     }
     if (g.status && !['started', 'created'].includes(g.status)) { clearInterval(pollInterval); settleGame(g); }
@@ -883,6 +891,80 @@ function renderMyOrders() {
 }
 
 function renderAll() { renderBook(); renderCards(); renderBalance(); renderTrades(); renderMyOrders(); updateSummary(); }
+
+// ── Live board ────────────────────────────────────────────────────────────
+const _PC = {'K':'♔','Q':'♕','R':'♖','B':'♗','N':'♘','P':'♙','k':'♚','q':'♛','r':'♜','b':'♝','n':'♞','p':'♟'};
+
+function renderFen(fen) {
+  const rows = fen.split(' ')[0].split('/');
+  let html = '<table class="chess-board">';
+  for (let r = 0; r < 8; r++) {
+    html += '<tr>';
+    let c = 0;
+    for (const ch of rows[r]) {
+      if (/\d/.test(ch)) {
+        for (let i = 0; i < +ch; i++) { html += `<td class="${(r+c)%2===0?'sq-l':'sq-d'}"></td>`; c++; }
+      } else {
+        const isW = ch === ch.toUpperCase();
+        html += `<td class="${(r+c)%2===0?'sq-l':'sq-d'} ${isW?'pc-w':'pc-b'}">${_PC[ch]||''}</td>`;
+        c++;
+      }
+    }
+    html += '</tr>';
+  }
+  document.getElementById('board-canvas').innerHTML = html + '</table>';
+}
+
+function updateBoard(movesStr) {
+  try {
+    const chess = new Chess();
+    if (movesStr) {
+      const mvs = movesStr.trim().split(' ').filter(Boolean);
+      const isUCI = mvs.length > 0 && /^[a-h][1-8][a-h][1-8]/.test(mvs[0]);
+      for (const m of mvs) {
+        try {
+          if (isUCI) chess.move({ from: m.slice(0,2), to: m.slice(2,4), promotion: m[4]||undefined });
+          else chess.move(m);
+        } catch(_) { break; }
+      }
+    }
+    renderFen(chess.fen());
+  } catch(_) {}
+}
+
+let boardStreamController = null;
+
+async function startBoardStream(gameId, initialMoves) {
+  updateBoard(initialMoves);
+  if (boardStreamController) boardStreamController.abort();
+  boardStreamController = new AbortController();
+  try {
+    const res = await fetch(`https://lichess.org/api/stream/game/${gameId}`, {
+      headers: { Accept: 'application/x-ndjson' },
+      signal: boardStreamController.signal,
+    });
+    if (!res.ok) return;
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop() || '';
+      for (const line of lines) {
+        const t = line.trim();
+        if (!t) continue;
+        try {
+          const ev = JSON.parse(t);
+          const m = ev.moves ?? ev.game?.moves ?? ev.state?.moves;
+          if (m !== undefined) updateBoard(m);
+        } catch(_) {}
+      }
+    }
+  } catch(e) { if (e.name !== 'AbortError') console.warn('Board stream ended'); }
+}
 
 // ── Ding sound ────────────────────────────────────────────────────────────
 let _audioCtx = null;
