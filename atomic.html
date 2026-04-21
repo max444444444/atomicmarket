@@ -157,7 +157,7 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
 .order-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);padding:12px;box-shadow:var(--card-shadow)}
 .order-hdr{font-size:9px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px}
 
-.side-tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--bg2);border:1px solid var(--bd1);border-radius:var(--r-md);overflow:hidden;margin-bottom:10px;padding:3px;gap:3px}
+.side-tabs{display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--bg2);border:1px solid var(--bd1);border-radius:var(--r-md);overflow:hidden;margin-bottom:10px;padding:3px;gap:3px}
 .side-tab{padding:7px;font-size:12px;font-weight:700;text-align:center;cursor:pointer;background:transparent;border:none;color:var(--txt3);transition:all 0.15s;border-radius:6px}
 .side-tab.buy-active{ background:var(--green);color:#000;box-shadow:0 0 10px rgba(0,209,122,0.4)}
 .side-tab.sell-active{background:var(--red);  color:#fff;box-shadow:0 0 10px rgba(255,68,102,0.4)}
@@ -321,6 +321,7 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
         <div class="order-hdr">Place order</div>
         <div class="side-tabs">
           <button class="side-tab buy-active" id="tab-buy" onclick="setSide('buy')">Buy YES</button>
+          <button class="side-tab" id="tab-buyno" onclick="setSide('buyno')">Buy NO</button>
           <button class="side-tab" id="tab-sell" onclick="setSide('sell')">Sell YES</button>
         </div>
         <div class="ol">
@@ -332,7 +333,7 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
           </select>
         </div>
         <div class="ol">
-          <label>Price (¢ per share)</label>
+          <label id="price-label">Price (¢ per share)</label>
           <input type="number" id="order-price" min="1" max="99" value="50" oninput="updateSummary()">
         </div>
         <div class="ol">
@@ -690,22 +691,28 @@ function onContractChange() { selContract(document.getElementById('order-contrac
 
 function setSide(s) {
   side = s;
-  document.getElementById('tab-buy').className  = 'side-tab' + (s === 'buy'  ? ' buy-active'  : '');
-  document.getElementById('tab-sell').className = 'side-tab' + (s === 'sell' ? ' sell-active' : '');
-  document.getElementById('place-btn').className = 'place-btn ' + (s === 'buy' ? 'buy' : 'sell');
-  document.getElementById('place-btn').textContent = s === 'buy' ? 'Place buy order' : 'Place sell order';
+  document.getElementById('tab-buy').className   = 'side-tab' + (s === 'buy'   ? ' buy-active'  : '');
+  document.getElementById('tab-buyno').className  = 'side-tab' + (s === 'buyno' ? ' sell-active' : '');
+  document.getElementById('tab-sell').className  = 'side-tab' + (s === 'sell'  ? ' sell-active' : '');
+  document.getElementById('place-btn').className  = 'place-btn ' + (s === 'buy' ? 'buy' : 'sell');
+  document.getElementById('place-btn').textContent = s === 'buy' ? 'Place buy order' : s === 'buyno' ? 'Place NO order' : 'Place sell order';
+  document.getElementById('price-label').textContent = s === 'buyno' ? 'NO price (¢ per share)' : 'Price (¢ per share)';
   updateSummary();
 }
 
 async function placeOrder() {
   if (!currentUser) { showToast('Sign in first'); return; }
-  const price  = parseInt(document.getElementById('order-price').value)  || 0;
+  let price    = parseInt(document.getElementById('order-price').value)  || 0;
   const shares = parseInt(document.getElementById('order-shares').value) || 0;
   const k      = document.getElementById('order-contract').value;
+
+  let actualSide = side;
+  if (side === 'buyno') { actualSide = 'sell'; price = 100 - price; }
+
   if (price < 1 || price > 99) { showToast('Price must be 1–99'); return; }
   if (shares < 1)              { showToast('Enter at least 1 share'); return; }
 
-  const r = await api('/api/order', { gameId: currentGameId, side, contract: k, price, shares });
+  const r = await api('/api/order', { gameId: currentGameId, side: actualSide, contract: k, price, shares });
   const d = await r.json();
   if (!r.ok) { showToast(d.error || 'Order failed'); return; }
 
@@ -729,11 +736,17 @@ function updateSummary() {
   const price  = parseInt(document.getElementById('order-price').value)  || 0;
   const shares = parseInt(document.getElementById('order-shares').value) || 0;
   const k      = document.getElementById('order-contract').value;
-  const cost   = price * shares, payout = shares * 100;
-  if (side === 'buy') {
-    document.getElementById('order-summary').innerHTML = `<strong>Buy ${shares}×</strong> "${contracts[k].name}" at <strong>${price}¢</strong> &nbsp;·&nbsp; Cost <strong>${cost} pawns</strong> &nbsp;·&nbsp; Max profit <strong>+${payout - cost}</strong>`;
+  const payout = shares * 100;
+  const el = document.getElementById('order-summary');
+  if (side === 'buyno') {
+    const cost = price * shares;
+    el.innerHTML = `<strong>Buy ${shares}×</strong> NO on "${contracts[k].name}" at <strong>${price}¢</strong> &nbsp;·&nbsp; Cost <strong>${cost} pawns</strong> &nbsp;·&nbsp; Max profit <strong>+${payout - cost}</strong>`;
+  } else if (side === 'buy') {
+    const cost = price * shares;
+    el.innerHTML = `<strong>Buy ${shares}×</strong> "${contracts[k].name}" at <strong>${price}¢</strong> &nbsp;·&nbsp; Cost <strong>${cost} pawns</strong> &nbsp;·&nbsp; Max profit <strong>+${payout - cost}</strong>`;
   } else {
-    document.getElementById('order-summary').innerHTML = `<strong>Sell ${shares}×</strong> "${contracts[k].name}" at <strong>${price}¢</strong> &nbsp;·&nbsp; Receive <strong>${cost} pawns</strong> &nbsp;·&nbsp; Max liability <strong>${payout - cost}</strong>`;
+    const cost = price * shares;
+    el.innerHTML = `<strong>Sell ${shares}×</strong> "${contracts[k].name}" at <strong>${price}¢</strong> &nbsp;·&nbsp; Receive <strong>${cost} pawns</strong> &nbsp;·&nbsp; Max liability <strong>${payout - cost}</strong>`;
   }
 }
 
