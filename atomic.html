@@ -1,0 +1,833 @@
+
+
+<style>
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  --accent:    #9d6fff;
+  --accent-dim: rgba(157,111,255,0.15);
+  --accent-glow: 0 0 12px rgba(157,111,255,0.35);
+  --green:     #00d17a;
+  --green-dim: rgba(0,209,122,0.12);
+  --red:       #ff4466;
+  --red-dim:   rgba(255,68,102,0.12);
+  --txt1: #dcd8ff;
+  --txt2: #6b6890;
+  --txt3: #3a3858;
+  --bg0:  #060610;
+  --bg1:  #0c0b1e;
+  --bg2:  #121128;
+  --bd1:  #1e1c38;
+  --bd2:  #2a2748;
+  --r-lg: 12px;
+  --r-md: 8px;
+  --card-shadow: 0 2px 8px rgba(0,0,0,0.6), inset 0 0.5px 0 rgba(255,255,255,0.05);
+  --card-glow:   0 0 0 1px var(--bd2), 0 2px 8px rgba(0,0,0,0.6);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1.5;
+  background:var(--bg0);
+  background-image:radial-gradient(ellipse 80% 60% at 50% -10%, rgba(80,40,180,0.18) 0%, transparent 70%)}
+
+.page{padding:0 1.5rem 2rem;max-width:1200px;margin:0 auto;position:relative}
+
+.screen{display:none}
+.screen.active{display:block}
+
+/* ── Auth ── */
+.auth-wrap{max-width:340px;margin:0 auto;padding-top:10vh}
+.auth-logo{text-align:center;margin-bottom:1.75rem}
+.auth-logo-mark{width:52px;height:52px;background:linear-gradient(135deg,#a855f7,#7c3aed);border-radius:var(--r-lg);display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px;box-shadow:0 4px 20px rgba(139,92,246,0.5)}
+.auth-logo h1{font-size:20px;font-weight:700;letter-spacing:-0.03em;color:var(--txt1)}
+.auth-logo p{font-size:12px;color:var(--txt2);margin-top:4px}
+
+.card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);padding:1.25rem;box-shadow:var(--card-shadow)}
+
+.status-msg{font-size:12px;padding:8px 11px;border-radius:var(--r-md);margin-bottom:10px;display:none;font-weight:500}
+.status-msg.err{ background:var(--red-dim); color:#ff8099; border:1px solid rgba(255,68,102,0.25);display:block}
+.status-msg.ok{  background:var(--green-dim);color:#4dffaa; border:1px solid rgba(0,209,122,0.25);display:block}
+.status-msg.info{background:var(--accent-dim);color:#c4aaff;border:1px solid rgba(157,111,255,0.25);display:block}
+
+.lichess-btn{width:100%;padding:11px;font-size:13px;font-weight:600;border-radius:var(--r-md);
+  border:1px solid var(--bd2);cursor:pointer;
+  background:linear-gradient(180deg,var(--bg2),var(--bg1));
+  color:var(--txt1);display:flex;align-items:center;justify-content:center;gap:9px;
+  transition:border-color 0.15s,box-shadow 0.15s}
+.lichess-btn:hover{border-color:var(--accent);box-shadow:var(--accent-glow)}
+.lichess-logo{width:18px;height:18px;flex-shrink:0;opacity:0.9}
+
+/* ── Topbar ── */
+.topbar{position:sticky;top:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.7rem 0;margin-bottom:1rem;
+  background:rgba(6,6,16,0.85);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--bd1)}
+.topbar-left{display:flex;align-items:center;gap:9px}
+.topbar-mark{width:30px;height:30px;background:linear-gradient(135deg,#a855f7,#7c3aed);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+  box-shadow:0 0 10px rgba(139,92,246,0.45)}
+.topbar-title{font-size:14px;font-weight:700;letter-spacing:-0.02em;color:var(--txt1)}
+.topbar-right{display:flex;align-items:center;gap:8px}
+
+.user-chip{display:flex;align-items:center;gap:6px;padding:4px 9px;background:var(--bg2);border-radius:var(--r-md);border:1px solid var(--bd1)}
+.user-avatar{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#6d28d9);
+  display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff}
+.user-name{font-size:11px;font-weight:600;color:var(--txt1)}
+
+.balance-chip{font-size:11px;color:var(--txt2);padding:4px 9px;background:var(--bg2);border-radius:var(--r-md);border:1px solid var(--bd1)}
+.balance-chip span{font-weight:700;color:var(--accent)}
+
+.signout-btn{font-size:11px;color:var(--txt3);background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:6px;transition:color 0.12s,background 0.12s}
+.signout-btn:hover{color:var(--txt1);background:var(--bg2)}
+
+/* ── Admin ── */
+.admin-panel{background:rgba(157,111,255,0.05);border:1px solid rgba(157,111,255,0.2);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:1rem}
+.admin-panel-title{font-size:10px;font-weight:700;color:var(--accent);margin-bottom:9px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:0.07em}
+.admin-row{display:flex;gap:7px;align-items:flex-end}
+.admin-row input{flex:1;padding:6px 9px;font-size:12px;border:1px solid var(--bd2);border-radius:var(--r-md);background:var(--bg2);color:var(--txt1);outline:none}
+.admin-row input:focus{border-color:var(--accent)}
+.admin-btn{padding:6px 12px;font-size:12px;font-weight:700;border-radius:var(--r-md);border:none;cursor:pointer;background:var(--accent);color:#fff;white-space:nowrap;transition:opacity 0.15s;box-shadow:var(--accent-glow)}
+.admin-btn:hover{opacity:0.85}
+
+/* ── Game search ── */
+.game-select-row{display:flex;gap:7px;margin-bottom:.75rem}
+.game-select-row input{flex:1;padding:9px 11px;font-size:13px;border:1px solid var(--bd2);border-radius:var(--r-md);background:var(--bg2);color:var(--txt1);outline:none;transition:border-color 0.15s,box-shadow 0.15s}
+.game-select-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+.game-select-row input::placeholder{color:var(--txt3)}
+.fetch-btn{padding:9px 16px;font-size:13px;font-weight:700;border-radius:var(--r-md);border:none;
+  background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;cursor:pointer;white-space:nowrap;
+  transition:opacity 0.15s,box-shadow 0.15s;box-shadow:0 0 14px rgba(139,92,246,0.35)}
+.fetch-btn:hover{opacity:0.88;box-shadow:0 0 20px rgba(139,92,246,0.5)}
+
+/* ── Game card ── */
+.game-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--card-shadow)}
+.player-col{display:flex;flex-direction:column;gap:6px}
+.player-row{display:flex;align-items:center;gap:8px}
+.piece-w{font-size:16px;line-height:1}
+.piece-b{font-size:16px;line-height:1;filter:brightness(0.25) contrast(2)}
+.player-name{font-size:13px;font-weight:600;color:var(--txt1)}
+.player-elo{font-size:11px;color:var(--txt3)}
+.game-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+
+.live-pill{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:var(--red);background:var(--red-dim);border:1px solid rgba(255,68,102,0.25);padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:0.04em}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--red);animation:blink 1.2s ease-in-out infinite;box-shadow:0 0 6px var(--red)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.1}}
+
+.move-tag{font-size:10px;color:var(--txt2);background:var(--bg2);border:1px solid var(--bd1);border-radius:var(--r-md);padding:3px 8px}
+.atomic-tag{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(157,111,255,0.25);border-radius:var(--r-md);padding:3px 8px}
+.game-link{font-size:10px;color:var(--accent);text-decoration:none;opacity:0.7}
+.game-link:hover{opacity:1;text-decoration:underline}
+
+.section-lbl{font-size:9px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:7px}
+
+/* ── Contracts ── */
+.contracts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
+.contract-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);padding:12px;cursor:pointer;transition:border-color 0.15s,box-shadow 0.15s;box-shadow:var(--card-shadow)}
+.contract-card:hover{border-color:var(--bd2)}
+.contract-card.sel{border-color:var(--accent);box-shadow:var(--accent-glow),var(--card-shadow)}
+.cc-label{font-size:10px;color:var(--txt2);margin-bottom:6px;font-weight:600}
+.cc-price{font-size:30px;font-weight:700;margin-bottom:3px;letter-spacing:-0.03em;color:var(--txt1)}
+.cc-spread{font-size:10px;color:var(--txt2)}
+.cc-vol{font-size:10px;color:var(--txt3);margin-top:2px}
+
+/* ── Market grid ── */
+.market-grid{display:grid;grid-template-columns:1.1fr 0.9fr;gap:10px;margin-bottom:1rem}
+
+.book-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);padding:12px;box-shadow:var(--card-shadow)}
+.book-hdr{font-size:9px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px}
+.book-cols-row{display:grid;grid-template-columns:1fr 1fr 1fr;font-size:9px;color:var(--txt3);padding:0 3px;margin-bottom:5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase}
+.book-cols-row span:not(:first-child){text-align:right}
+.book-level{display:grid;grid-template-columns:1fr 1fr 1fr;font-size:11px;padding:4px 3px;border-radius:5px;cursor:pointer;transition:background 0.1s}
+.book-level:hover{background:var(--bg2)}
+.book-level span:not(:first-child){text-align:right}
+.book-level .p{font-weight:700;font-variant-numeric:tabular-nums}
+.book-level.ask .p{color:var(--red)}
+.book-level.bid .p{color:var(--green)}
+.book-level .sz{color:var(--txt2);font-variant-numeric:tabular-nums}
+.book-level .tot{color:var(--txt3);font-size:10px;font-variant-numeric:tabular-nums}
+
+.spread-row{display:flex;align-items:center;gap:7px;margin:7px 0}
+.dbar{flex:1;height:2px;background:var(--bg2);border-radius:2px;overflow:hidden}
+.dfill-ask{height:100%;background:var(--red);transition:width 0.35s;box-shadow:0 0 4px var(--red)}
+.dfill-bid{height:100%;background:var(--green);transition:width 0.35s;box-shadow:0 0 4px var(--green)}
+.mid-lbl{font-size:12px;font-weight:700;min-width:34px;text-align:center;color:var(--txt1);font-variant-numeric:tabular-nums}
+
+/* ── Order entry ── */
+.order-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);padding:12px;box-shadow:var(--card-shadow)}
+.order-hdr{font-size:9px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px}
+
+.side-tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--bg2);border:1px solid var(--bd1);border-radius:var(--r-md);overflow:hidden;margin-bottom:10px;padding:3px;gap:3px}
+.side-tab{padding:7px;font-size:12px;font-weight:700;text-align:center;cursor:pointer;background:transparent;border:none;color:var(--txt3);transition:all 0.15s;border-radius:6px}
+.side-tab.buy-active{ background:var(--green);color:#000;box-shadow:0 0 10px rgba(0,209,122,0.4)}
+.side-tab.sell-active{background:var(--red);  color:#fff;box-shadow:0 0 10px rgba(255,68,102,0.4)}
+
+.ol{margin-bottom:9px}
+.ol label{display:block;font-size:9px;font-weight:800;color:var(--txt3);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em}
+.ol input,.ol select{width:100%;padding:8px 10px;font-size:12px;border:1px solid var(--bd2);border-radius:var(--r-md);background:var(--bg2);color:var(--txt1);outline:none;transition:border-color 0.15s,box-shadow 0.15s;font-variant-numeric:tabular-nums}
+.ol input:focus,.ol select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+.ol select option{background:var(--bg2)}
+
+.order-summary-box{font-size:11px;color:var(--txt2);background:var(--bg2);border-radius:var(--r-md);padding:8px 10px;margin-bottom:9px;line-height:1.8;border:1px solid var(--bd1)}
+.order-summary-box strong{color:var(--txt1);font-weight:700}
+
+.place-btn{width:100%;padding:10px;font-size:13px;font-weight:700;border-radius:var(--r-md);border:none;cursor:pointer;transition:opacity 0.12s,transform 0.1s,box-shadow 0.15s;letter-spacing:0.01em}
+.place-btn.buy{ background:linear-gradient(135deg,#00e688,var(--green));color:#000;box-shadow:0 0 16px rgba(0,209,122,0.35)}
+.place-btn.sell{background:linear-gradient(135deg,#ff6680,var(--red)); color:#fff;box-shadow:0 0 16px rgba(255,68,102,0.35)}
+.place-btn:hover{opacity:0.88}
+.place-btn:active{opacity:0.8;transform:scale(0.99)}
+
+/* ── Trades & orders ── */
+.trades-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:1rem;box-shadow:var(--card-shadow)}
+.trade-row{display:grid;grid-template-columns:1.5fr 0.7fr 0.5fr 0.8fr;font-size:11px;padding:5px 2px;border-bottom:1px solid var(--bd1)}
+.trade-row:last-child{border-bottom:none}
+.trade-hdr{font-size:9px;color:var(--txt3);font-weight:800;text-transform:uppercase;letter-spacing:0.06em}
+.trade-up{color:var(--green);font-weight:700}
+.trade-dn{color:var(--red);font-weight:700}
+
+.orders-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);padding:12px 14px;box-shadow:var(--card-shadow)}
+.my-order-row{display:flex;align-items:center;justify-content:space-between;font-size:11px;padding:6px 2px;border-bottom:1px solid var(--bd1)}
+.my-order-row:last-child{border-bottom:none}
+.cancel-lnk{font-size:10px;color:var(--txt3);cursor:pointer;background:none;border:none;transition:color 0.12s;font-weight:600}
+.cancel-lnk:hover{color:var(--red)}
+.empty-state{font-size:11px;color:var(--txt3);padding:8px 2px}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(8px);
+  background:var(--bg2);color:var(--txt1);border:1px solid var(--bd2);
+  padding:8px 16px;border-radius:var(--r-md);font-size:12px;font-weight:600;
+  opacity:0;transition:opacity 0.2s,transform 0.2s;pointer-events:none;white-space:nowrap;
+  box-shadow:0 4px 20px rgba(0,0,0,0.7),var(--accent-glow)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+
+<div class="page">
+
+<div id="screen-login" class="screen active">
+  <div class="auth-wrap">
+    <div class="auth-logo">
+      <div class="auth-logo-mark">&#9889;</div>
+      <h1>AtomicMarket</h1>
+      <p>Predict live atomic chess games</p>
+    </div>
+    <div class="card">
+      <div class="status-msg" id="login-msg"></div>
+      <button class="lichess-btn" onclick="startLichessOAuth()">
+        <svg class="lichess-logo" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M38.956.5c-3.53.418-6.452 2.371-7.9 5.864l-1.12 3.49-3.568 1.627c-2.189.956-3.782 2.555-4.107 4.496l-.137.85.528.14c.86.228 2.094.32 3.216.249 1.167-.075 1.621-.232 1.621-.232l.04.172s-.407.235-1.075.509a9.29 9.29 0 0 1-3.273.61c-1.168 0-2.135-.227-2.917-.603l-.325-.163-.038.214c-.062.36-.093.728-.093 1.104 0 2.54 1.418 4.78 3.706 6.148l1.08.641-.587 1.08c-.637 1.17-.962 2.463-.962 3.814 0 3.843 2.606 7.124 6.338 8.354l.907.3-.408.848c-1.04 2.162-1.23 4.524-.548 6.857a9.767 9.767 0 0 0 1.171 2.658l.373.567-.552.422c-3.504 2.688-6.12 5.698-5.7 7.723h25.892V.5h-11.49z" fill="var(--color-text-primary)"/>
+        </svg>
+        Continue with Lichess
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-app" class="screen">
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-mark">&#9889;</div>
+      <div class="topbar-title">AtomicMarket</div>
+    </div>
+    <div class="topbar-right">
+      <div class="balance-chip"><span id="balance-display">0</span> pawns</div>
+      <div class="user-chip">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <span class="user-name" id="user-display">—</span>
+      </div>
+      <button class="signout-btn" onclick="doSignout()">sign out</button>
+    </div>
+  </div>
+
+  <div id="admin-panel" style="display:none">
+    <div class="admin-panel">
+      <div class="admin-panel-title">&#9733; Admin — add pawns to user</div>
+      <div class="admin-row">
+        <input type="text" id="admin-target" placeholder="username" />
+        <input type="number" id="admin-amount" placeholder="amount" min="1" style="max-width:90px" />
+        <button class="admin-btn" onclick="adminAddPawns()">Add pawns</button>
+      </div>
+      <div class="status-msg" id="admin-msg" style="margin-top:8px;margin-bottom:0"></div>
+    </div>
+  </div>
+
+  <div class="section-lbl" style="margin-bottom:8px">Find a game</div>
+  <div class="game-select-row">
+    <input id="username-input" placeholder="Lichess username playing atomic" />
+    <button class="fetch-btn" onclick="fetchGame()">Find game</button>
+  </div>
+  <div class="status-msg" id="game-status"></div>
+
+  <div id="game-section" style="display:none">
+    <div class="game-card">
+      <div class="player-col">
+        <div class="player-row">
+          <span class="piece-w">&#9812;</span>
+          <span class="player-name" id="player-white">—</span>
+          <span class="player-elo" id="elo-white"></span>
+        </div>
+        <div class="player-row">
+          <span style="font-size:17px">&#9818;</span>
+          <span class="player-name" id="player-black">—</span>
+          <span class="player-elo" id="elo-black"></span>
+        </div>
+        <div style="margin-top:4px">
+          <a id="game-link" class="game-link" href="#" target="_blank">view on lichess &#8599;</a>
+        </div>
+      </div>
+      <div class="game-right">
+        <div class="live-pill"><span class="live-dot"></span>live</div>
+        <div class="move-tag" id="move-tag">move —</div>
+        <div class="atomic-tag">&#9889; atomic</div>
+      </div>
+    </div>
+
+    <div class="section-lbl">Contracts</div>
+    <div class="contracts-grid">
+      <div class="contract-card sel" id="cc-white" onclick="selContract('white')">
+        <div class="cc-label" id="ccl-white">White wins</div>
+        <div class="cc-price" style="color:var(--color-text-primary)" id="ccp-white">—</div>
+        <div class="cc-spread" id="ccs-white">no orders</div>
+        <div class="cc-vol" id="ccv-white">vol 0</div>
+      </div>
+      <div class="contract-card" id="cc-draw" onclick="selContract('draw')">
+        <div class="cc-label">Draw</div>
+        <div class="cc-price" style="color:#888780" id="ccp-draw">—</div>
+        <div class="cc-spread" id="ccs-draw">no orders</div>
+        <div class="cc-vol" id="ccv-draw">vol 0</div>
+      </div>
+      <div class="contract-card" id="cc-black" onclick="selContract('black')">
+        <div class="cc-label" id="ccl-black">Black wins</div>
+        <div class="cc-price" style="color:var(--color-text-secondary)" id="ccp-black">—</div>
+        <div class="cc-spread" id="ccs-black">no orders</div>
+        <div class="cc-vol" id="ccv-black">vol 0</div>
+      </div>
+    </div>
+
+    <div class="market-grid">
+      <div class="book-card">
+        <div class="book-hdr" id="book-title">Order book</div>
+        <div class="book-cols-row"><span>price (¢)</span><span>size</span><span>total</span></div>
+        <div id="ask-rows"></div>
+        <div class="spread-row">
+          <div class="dbar"><div class="dfill-ask" id="ask-depth" style="width:0"></div></div>
+          <div class="mid-lbl" id="mid-lbl">—</div>
+          <div class="dbar"><div class="dfill-bid" id="bid-depth" style="width:0"></div></div>
+        </div>
+        <div id="bid-rows"></div>
+      </div>
+
+      <div class="order-card">
+        <div class="order-hdr">Place order</div>
+        <div class="side-tabs">
+          <button class="side-tab buy-active" id="tab-buy" onclick="setSide('buy')">Buy YES</button>
+          <button class="side-tab" id="tab-sell" onclick="setSide('sell')">Sell YES</button>
+        </div>
+        <div class="ol">
+          <label>Contract</label>
+          <select id="order-contract" onchange="onContractChange()">
+            <option value="white">White wins</option>
+            <option value="draw">Draw</option>
+            <option value="black">Black wins</option>
+          </select>
+        </div>
+        <div class="ol">
+          <label>Price (¢ per share)</label>
+          <input type="number" id="order-price" min="1" max="99" value="50" oninput="updateSummary()">
+        </div>
+        <div class="ol">
+          <label>Shares</label>
+          <input type="number" id="order-shares" min="1" value="10" oninput="updateSummary()">
+        </div>
+        <div class="order-summary-box" id="order-summary"></div>
+        <button class="place-btn buy" id="place-btn" onclick="placeOrder()">Place buy order</button>
+      </div>
+    </div>
+
+    <div class="section-lbl">Recent trades</div>
+    <div class="trades-card">
+      <div class="trade-row trade-hdr"><span>contract</span><span>price</span><span>size</span><span>time</span></div>
+      <div id="trade-feed"><div class="empty-state">No trades yet</div></div>
+    </div>
+
+    <div class="section-lbl" style="margin-top:1rem">My open orders</div>
+    <div class="orders-card" id="my-orders-list">
+      <div class="empty-state">No open orders</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+</div>
+
+<script>
+const ADMIN = 'ecc_official';
+
+// ── State ─────────────────────────────────────────────────────────────────
+let currentUser     = null;
+let sessionToken    = null;
+let selectedContract = 'white';
+let side            = 'buy';
+let tradeHistory    = [];
+let pollInterval    = null;
+let moveNum         = 0;
+let currentGameId   = null;
+let currentGameMeta = null;
+let userBalance     = 0;
+
+const contracts = {
+  white: { name: 'White wins', mid: 50, bids: [], asks: [] },
+  draw:  { name: 'Draw',       mid: 10, bids: [], asks: [] },
+  black: { name: 'Black wins', mid: 50, bids: [], asks: [] },
+};
+
+// ── Session storage ───────────────────────────────────────────────────────
+const SESSION_KEY = 'atomicmarket_session';
+
+function saveSession() {
+  if (currentUser && sessionToken) {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ username: currentUser, token: sessionToken }));
+  } else {
+    localStorage.removeItem(SESSION_KEY);
+  }
+}
+
+function loadSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SESSION_KEY));
+    if (s?.username && s?.token) { currentUser = s.username; sessionToken = s.token; return true; }
+  } catch (_) {}
+  return false;
+}
+
+// ── API helper ────────────────────────────────────────────────────────────
+async function api(path, body) {
+  const res = await fetch(path, {
+    method: body ? 'POST' : 'GET',
+    headers: { 'Content-Type': 'application/json', 'X-Session': sessionToken || '' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return res;
+}
+
+// ── WebSocket ─────────────────────────────────────────────────────────────
+let ws = null;
+
+function wsConnect() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${proto}//${location.host}`);
+  ws.onopen = () => { if (currentGameId) wsSubscribe(currentGameId); };
+  ws.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'state') applyServerState(msg.game);
+    else if (msg.type === 'balance' && msg.username === currentUser) {
+      userBalance = msg.balance;
+      renderBalance();
+    }
+  };
+  ws.onclose = () => setTimeout(wsConnect, 3000);
+}
+
+function wsSubscribe(gameId) {
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'subscribe', gameId }));
+}
+
+function applyServerState(game) {
+  if (!game) return;
+  Object.assign(contracts.white, game.contracts.white);
+  Object.assign(contracts.draw,  game.contracts.draw);
+  Object.assign(contracts.black, game.contracts.black);
+  tradeHistory = game.trades || [];
+  renderAll();
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+function showMsg(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.className = 'status-msg ' + type;
+}
+function clearMsg(id) {
+  const el = document.getElementById(id);
+  el.className = 'status-msg'; el.textContent = '';
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── Session restore ───────────────────────────────────────────────────────
+async function restoreSession() {
+  if (!loadSession()) return;
+  const r = await api(`/api/balance/${currentUser}`);
+  if (!r.ok) { saveSession(); return; } // session expired
+  const d = await r.json();
+  userBalance = d.balance;
+  showApp();
+}
+
+function showApp() {
+  document.getElementById('user-avatar').textContent = currentUser.substring(0, 2).toUpperCase();
+  document.getElementById('user-display').textContent = currentUser;
+  document.getElementById('admin-panel').style.display = currentUser === ADMIN ? 'block' : 'none';
+  renderBalance();
+  go('app');
+}
+
+// ── Lichess OAuth 2.0 + PKCE ──────────────────────────────────────────────
+const LICHESS_CLIENT_ID = 'atomicmarket.local';
+const LICHESS_ORIGIN    = 'https://lichess.org';
+
+function _b64url(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function startLichessOAuth() {
+  if (location.protocol === 'file:') {
+    showMsg('login-msg', 'Lichess login requires HTTP. Run: node server.js', 'err'); return;
+  }
+  const verifier  = _b64url(crypto.getRandomValues(new Uint8Array(32)));
+  const challenge = _b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
+  const state     = _b64url(crypto.getRandomValues(new Uint8Array(16)));
+  sessionStorage.setItem('lc_verifier', verifier);
+  sessionStorage.setItem('lc_state', state);
+  const redirectUri = location.origin + location.pathname;
+  location.href = `${LICHESS_ORIGIN}/oauth?` + new URLSearchParams({
+    response_type: 'code', client_id: LICHESS_CLIENT_ID,
+    redirect_uri: redirectUri, code_challenge_method: 'S256',
+    code_challenge: challenge, state,
+  });
+}
+
+async function handleOAuthCallback() {
+  const p = new URLSearchParams(location.search);
+  const code = p.get('code'), retState = p.get('state');
+  if (!code) return;
+  history.replaceState(null, '', location.pathname);
+
+  const verifier   = sessionStorage.getItem('lc_verifier');
+  const savedState = sessionStorage.getItem('lc_state');
+  sessionStorage.removeItem('lc_verifier');
+  sessionStorage.removeItem('lc_state');
+  if (retState !== savedState) { showMsg('login-msg', 'OAuth state mismatch.', 'err'); return; }
+
+  showMsg('login-msg', 'Connecting to Lichess…', 'info');
+  const redirectUri = location.origin + location.pathname;
+  try {
+    const tokenRes = await fetch(`${LICHESS_ORIGIN}/api/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ grant_type: 'authorization_code', code, code_verifier: verifier, redirect_uri: redirectUri, client_id: LICHESS_CLIENT_ID }),
+    });
+    if (!tokenRes.ok) throw new Error('Token exchange failed');
+    const { access_token } = await tokenRes.json();
+
+    // Exchange Lichess token for a server session
+    const loginRes = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lichessToken: access_token }),
+    });
+    if (!loginRes.ok) throw new Error('Server login failed');
+    const { token, username, balance } = await loginRes.json();
+
+    sessionToken = token;
+    currentUser  = username;
+    userBalance  = balance;
+    saveSession();
+    clearMsg('login-msg');
+    showApp();
+  } catch (e) {
+    showMsg('login-msg', e.message || 'Login failed. Try again.', 'err');
+  }
+}
+
+function doSignout() {
+  currentUser = null; sessionToken = null; currentGameId = null; currentGameMeta = null;
+  userBalance = 0; tradeHistory = [];
+  if (pollInterval) clearInterval(pollInterval);
+  document.getElementById('game-section').style.display = 'none';
+  clearMsg('game-status');
+  saveSession();
+  go('login');
+}
+
+async function adminAddPawns() {
+  const target = document.getElementById('admin-target').value.trim().toLowerCase();
+  const amount = parseInt(document.getElementById('admin-amount').value) || 0;
+  if (!target || amount <= 0) { showMsg('admin-msg', 'Enter a username and positive amount.', 'err'); return; }
+  const r = await api('/api/admin/pawns', { target, amount });
+  const d = await r.json();
+  if (!r.ok) { showMsg('admin-msg', d.error || 'Failed', 'err'); return; }
+  showMsg('admin-msg', `Added ${amount} pawns to ${target}. New balance: ${d.balance}`, 'ok');
+  if (target === currentUser) { userBalance = d.balance; renderBalance(); }
+}
+
+function renderBalance() {
+  document.getElementById('balance-display').textContent = userBalance.toLocaleString();
+}
+
+// ── Game loading ──────────────────────────────────────────────────────────
+async function fetchGame() {
+  const u = document.getElementById('username-input').value.trim();
+  if (!u) { showMsg('game-status', 'Enter a Lichess username.', 'err'); return; }
+  showMsg('game-status', 'Looking up ' + u + '…', 'info');
+  try {
+    const res = await fetch(`https://lichess.org/api/user/${encodeURIComponent(u)}/current-game?moves=true&opening=true`, { headers: { Accept: 'application/json' } });
+    if (res.status === 404 || res.status === 204) { showMsg('game-status', `"${u}" has no active game.`, 'err'); return; }
+    if (!res.ok) { showMsg('game-status', 'Lichess error (' + res.status + ').', 'err'); return; }
+    const game = await res.json();
+    if (!isAtomic(game)) { showMsg('game-status', `"${u}" is playing ${detectVariant(game)}, not atomic.`, 'err'); return; }
+    clearMsg('game-status');
+    loadGame(game);
+  } catch (e) { showMsg('game-status', 'Network error: ' + e.message, 'err'); }
+}
+
+function isAtomic(g) {
+  const v = g.variant;
+  if (!v) return false;
+  if (typeof v === 'string') return v.toLowerCase() === 'atomic';
+  return (v.key || '').toLowerCase() === 'atomic' || (v.name || '').toLowerCase() === 'atomic';
+}
+function detectVariant(g) {
+  const v = g.variant;
+  if (!v) return 'standard';
+  if (typeof v === 'string') return v;
+  return v.name || v.key || 'standard';
+}
+
+async function loadGame(game) {
+  if (pollInterval) clearInterval(pollInterval);
+  const wp = game.players?.white, bp = game.players?.black;
+  const wn = wp?.user?.name || wp?.user?.id || 'White';
+  const bn = bp?.user?.name || bp?.user?.id || 'Black';
+  const weloText = wp?.rating ? '(' + wp.rating + ')' : '';
+  const beloText = bp?.rating ? '(' + bp.rating + ')' : '';
+
+  document.getElementById('player-white').textContent = wn;
+  document.getElementById('player-black').textContent = bn;
+  document.getElementById('elo-white').textContent    = weloText;
+  document.getElementById('elo-black').textContent    = beloText;
+  document.getElementById('ccl-white').textContent    = wn + ' wins';
+  document.getElementById('ccl-black').textContent    = bn + ' wins';
+  document.getElementById('game-link').href           = 'https://lichess.org/' + game.id;
+  const moves = game.moves ? game.moves.trim().split(' ') : [];
+  moveNum = moves.length;
+  document.getElementById('move-tag').textContent = 'move ' + Math.ceil(moveNum / 2);
+
+  const welo = wp?.rating || 1500, belo = bp?.rating || 1500, diff = welo - belo;
+  const wp2 = Math.round(50 + Math.min(30, Math.max(-30, diff / 20)));
+  const bp2 = Math.round(Math.max(5, 45 - Math.min(30, Math.max(-30, diff / 20))));
+  const dp  = Math.max(5, 100 - wp2 - bp2);
+
+  currentGameId   = game.id;
+  currentGameMeta = { wn, bn, weloText, beloText };
+  tradeHistory    = [];
+
+  // Init game on server (no-op if already exists) and get current state
+  const r = await api('/api/game/init', { gameId: game.id, mids: { white: wp2, draw: dp, black: bp2 } });
+  if (r.ok) {
+    const serverGame = await r.json();
+    applyServerState(serverGame);
+  } else {
+    // Fallback to local empty book
+    for (const c of Object.values(contracts)) { c.bids = []; c.asks = []; }
+    contracts.white.mid = wp2; contracts.draw.mid = dp; contracts.black.mid = bp2;
+  }
+
+  wsSubscribe(game.id);
+  document.getElementById('game-section').style.display = 'block';
+  selContract('white');
+  renderAll();
+  pollInterval = setInterval(() => pollGame(game.id), 5000);
+}
+
+async function pollGame(id) {
+  try {
+    const res = await fetch(`https://lichess.org/api/game/${id}?moves=true`, { headers: { Accept: 'application/json' } });
+    if (!res.ok) return;
+    const g = await res.json();
+    const moves = g.moves ? g.moves.trim().split(' ') : [];
+    if (moves.length !== moveNum) {
+      moveNum = moves.length;
+      document.getElementById('move-tag').textContent = 'move ' + Math.ceil(moveNum / 2);
+      updateMids(); renderBook(); renderCards();
+    }
+    if (g.status && !['started', 'created'].includes(g.status)) { clearInterval(pollInterval); settleGame(g); }
+  } catch (_) {}
+}
+
+function settleGame(g) {
+  const w = g.winner;
+  const wn = document.getElementById('player-white').textContent;
+  const bn = document.getElementById('player-black').textContent;
+  let msg = 'Game over · ';
+  if (w === 'white') msg += wn + ' wins!';
+  else if (w === 'black') msg += bn + ' wins!';
+  else msg += 'Draw!';
+  showMsg('game-status', msg, 'ok');
+  showToast('Market settled');
+  if (w) { contracts[w].mid = 99; contracts[w === 'white' ? 'black' : 'white'].mid = 1; contracts.draw.mid = 1; }
+  renderCards();
+}
+
+// ── Order form ────────────────────────────────────────────────────────────
+function selContract(k) {
+  selectedContract = k;
+  document.querySelectorAll('.contract-card').forEach(e => e.classList.remove('sel'));
+  document.getElementById('cc-' + k).classList.add('sel');
+  document.getElementById('order-contract').value = k;
+  document.getElementById('order-price').value = contracts[k].mid;
+  renderBook(); updateSummary();
+}
+function onContractChange() { selContract(document.getElementById('order-contract').value); }
+
+function setSide(s) {
+  side = s;
+  document.getElementById('tab-buy').className  = 'side-tab' + (s === 'buy'  ? ' buy-active'  : '');
+  document.getElementById('tab-sell').className = 'side-tab' + (s === 'sell' ? ' sell-active' : '');
+  document.getElementById('place-btn').className = 'place-btn ' + (s === 'buy' ? 'buy' : 'sell');
+  document.getElementById('place-btn').textContent = s === 'buy' ? 'Place buy order' : 'Place sell order';
+  updateSummary();
+}
+
+async function placeOrder() {
+  if (!currentUser) { showToast('Sign in first'); return; }
+  const price  = parseInt(document.getElementById('order-price').value)  || 0;
+  const shares = parseInt(document.getElementById('order-shares').value) || 0;
+  const k      = document.getElementById('order-contract').value;
+  if (price < 1 || price > 99) { showToast('Price must be 1–99'); return; }
+  if (shares < 1)              { showToast('Enter at least 1 share'); return; }
+
+  const r = await api('/api/order', { gameId: currentGameId, side, contract: k, price, shares });
+  const d = await r.json();
+  if (!r.ok) { showToast(d.error || 'Order failed'); return; }
+
+  userBalance = d.balance;
+  renderBalance();
+  const msg = d.filled >= shares ? `Filled ${d.filled}` : d.filled > 0 ? `Filled ${d.filled}, rest resting` : 'Order placed';
+  showToast(msg);
+  // WS broadcast will update book for all users
+}
+
+async function cancelOrder(orderId, contractKey, side) {
+  const r = await api('/api/cancel', { gameId: currentGameId, contract: contractKey, orderId, side });
+  const d = await r.json();
+  if (!r.ok) { showToast(d.error || 'Cancel failed'); return; }
+  userBalance = d.balance;
+  renderBalance();
+  showToast('Order cancelled');
+}
+
+function updateSummary() {
+  const price  = parseInt(document.getElementById('order-price').value)  || 0;
+  const shares = parseInt(document.getElementById('order-shares').value) || 0;
+  const k      = document.getElementById('order-contract').value;
+  const cost   = price * shares, payout = shares * 100;
+  if (side === 'buy') {
+    document.getElementById('order-summary').innerHTML = `<strong>Buy ${shares}×</strong> "${contracts[k].name}" at <strong>${price}¢</strong> &nbsp;·&nbsp; Cost <strong>${cost} pawns</strong> &nbsp;·&nbsp; Max profit <strong>+${payout - cost}</strong>`;
+  } else {
+    document.getElementById('order-summary').innerHTML = `<strong>Sell ${shares}×</strong> "${contracts[k].name}" at <strong>${price}¢</strong> &nbsp;·&nbsp; Receive <strong>${cost} pawns</strong> &nbsp;·&nbsp; Max liability <strong>${payout - cost}</strong>`;
+  }
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+function aggLevels(orders) {
+  const map = {};
+  for (const o of orders) map[o.price] = (map[o.price] || 0) + o.size;
+  return Object.entries(map).map(([p, s]) => ({ price: +p, size: s }));
+}
+
+function renderBook() {
+  const k = selectedContract, c = contracts[k];
+  document.getElementById('book-title').textContent = 'Order book — ' + c.name;
+  document.getElementById('mid-lbl').textContent    = c.mid + '¢';
+
+  const sa = aggLevels(c.asks).sort((a, b) => a.price - b.price);
+  const sb = aggLevels(c.bids).sort((a, b) => b.price - a.price);
+
+  let ah = '', at = sa.reduce((s, r) => s + r.size, 0);
+  [...sa].reverse().slice(0, 5).forEach(r => {
+    ah += `<div class="book-level ask" onclick="clickLevel(${r.price})"><span class="p">${r.price}</span><span class="sz">${r.size}</span><span class="tot">${at}</span></div>`;
+    at -= r.size;
+  });
+  document.getElementById('ask-rows').innerHTML = ah;
+
+  let bh = '', bt = 0;
+  sb.slice(0, 5).forEach(r => {
+    bt += r.size;
+    bh += `<div class="book-level bid" onclick="clickLevel(${r.price})"><span class="p">${r.price}</span><span class="sz">${r.size}</span><span class="tot">${bt}</span></div>`;
+  });
+  document.getElementById('bid-rows').innerHTML = bh;
+
+  const tb = sb.reduce((s, r) => s + r.size, 0), ta = sa.reduce((s, r) => s + r.size, 0), tot = tb + ta || 1;
+  document.getElementById('bid-depth').style.width = Math.round(tb / tot * 100) + '%';
+  document.getElementById('ask-depth').style.width = Math.round(ta / tot * 100) + '%';
+}
+function clickLevel(p) { document.getElementById('order-price').value = p; updateSummary(); }
+
+function updateMids() {
+  Object.values(contracts).forEach(c => {
+    const bb = c.bids.length ? Math.max(...c.bids.map(b => b.price)) : null;
+    const ba = c.asks.length ? Math.min(...c.asks.map(a => a.price)) : null;
+    if (bb != null && ba != null) c.mid = Math.round((bb + ba) / 2);
+    else if (bb != null) c.mid = bb;
+    else if (ba != null) c.mid = ba;
+  });
+}
+
+function renderCards() {
+  Object.entries(contracts).forEach(([k, c]) => {
+    const bb = c.bids.length ? Math.max(...c.bids.map(b => b.price)) : null;
+    const ba = c.asks.length ? Math.min(...c.asks.map(a => a.price)) : null;
+    const vol = tradeHistory.filter(t => t.contract === c.name).reduce((s, t) => s + t.size, 0);
+    document.getElementById('ccp-' + k).textContent = c.mid + '¢';
+    document.getElementById('ccs-' + k).textContent = bb != null && ba != null ? 'bid ' + bb + ' · ask ' + ba : 'no orders';
+    document.getElementById('ccv-' + k).textContent = 'vol ' + vol;
+  });
+}
+
+function renderTrades() {
+  const el = document.getElementById('trade-feed');
+  if (!tradeHistory.length) { el.innerHTML = '<div class="empty-state">No trades yet</div>'; return; }
+  el.innerHTML = tradeHistory.slice(0, 10).map(t => {
+    const ago = Math.round((Date.now() - t.time) / 1000);
+    const ts  = ago < 60 ? ago + 's ago' : Math.round(ago / 60) + 'm ago';
+    return `<div class="trade-row"><span style="color:var(--txt2)">${t.contract}</span><span class="${t.dir === 'up' ? 'trade-up' : 'trade-dn'}">${t.price}¢</span><span>${t.size}</span><span style="color:var(--txt3)">${ts}</span></div>`;
+  }).join('');
+}
+
+function renderMyOrders() {
+  const el = document.getElementById('my-orders-list');
+  const mine = [];
+  for (const [ck, c] of Object.entries(contracts)) {
+    for (const b of c.bids.filter(b => b.user === currentUser))
+      mine.push({ id: b.id, side: 'buy',  contract: ck, cname: c.name, price: b.price, size: b.size });
+    for (const a of c.asks.filter(a => a.user === currentUser))
+      mine.push({ id: a.id, side: 'sell', contract: ck, cname: c.name, price: a.price, size: a.size });
+  }
+  if (!mine.length) { el.innerHTML = '<div class="empty-state">No open orders</div>'; return; }
+  el.innerHTML = mine.map(o =>
+    `<div class="my-order-row">
+      <span style="color:${o.side === 'buy' ? 'var(--green)' : 'var(--red)'};font-weight:600">${o.side}</span>
+      <span>${o.cname}</span>
+      <span>${o.size} @ ${o.price}¢</span>
+      <button class="cancel-lnk" onclick="cancelOrder('${o.id}','${o.contract}','${o.side}')">cancel</button>
+    </div>`
+  ).join('');
+}
+
+function renderAll() { renderBook(); renderCards(); renderBalance(); renderTrades(); renderMyOrders(); updateSummary(); }
+
+// ── Boot ──────────────────────────────────────────────────────────────────
+wsConnect();
+restoreSession();
+updateSummary();
+handleOAuthCallback();
+</script>
