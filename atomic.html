@@ -3,32 +3,32 @@
 <style>
 :root {
   --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-  --accent:    #9d6fff;
-  --accent-dim: rgba(157,111,255,0.15);
-  --accent-glow: 0 0 12px rgba(157,111,255,0.35);
-  --green:     #00d17a;
-  --green-dim: rgba(0,209,122,0.12);
-  --red:       #ff4466;
-  --red-dim:   rgba(255,68,102,0.12);
-  --txt1: #dcd8ff;
-  --txt2: #6b6890;
-  --txt3: #3a3858;
-  --bg0:  #060610;
-  --bg1:  #0c0b1e;
-  --bg2:  #121128;
-  --bd1:  #1e1c38;
-  --bd2:  #2a2748;
-  --r-lg: 12px;
-  --r-md: 8px;
-  --card-shadow: 0 2px 8px rgba(0,0,0,0.6), inset 0 0.5px 0 rgba(255,255,255,0.05);
-  --card-glow:   0 0 0 1px var(--bd2), 0 2px 8px rgba(0,0,0,0.6);
+  --accent:     #2563EB;
+  --accent-dim: rgba(37,99,235,0.1);
+  --accent-glow: 0 0 0 1px rgba(37,99,235,0.35);
+  --green:      #00C700;
+  --green-dim:  rgba(0,199,0,0.1);
+  --red:        #FF2D55;
+  --red-dim:    rgba(255,45,85,0.1);
+  --txt1: #F0F4FF;
+  --txt2: #7B8DB0;
+  --txt3: #3D4D6A;
+  --bg0:  #080B10;
+  --bg1:  #10141C;
+  --bg2:  #171D28;
+  --bd1:  #1E2638;
+  --bd2:  #2A3448;
+  --r-lg: 10px;
+  --r-md: 6px;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  --card-glow:   0 0 0 1px var(--bd2), 0 1px 3px rgba(0,0,0,0.5);
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1.5;
   background:var(--bg0);
-  background-image:radial-gradient(ellipse 80% 60% at 50% -10%, rgba(80,40,180,0.18) 0%, transparent 70%)}
+  background-image:radial-gradient(ellipse 80% 50% at 50% -5%, rgba(20,50,120,0.14) 0%, transparent 60%)}
 
 .page{padding:0 1.5rem 2rem;max-width:1200px;margin:0 auto;position:relative}
 
@@ -38,7 +38,7 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
 /* ── Auth ── */
 .auth-wrap{max-width:340px;margin:0 auto;padding-top:10vh}
 .auth-logo{text-align:center;margin-bottom:1.75rem}
-.auth-logo-mark{width:52px;height:52px;background:linear-gradient(135deg,#a855f7,#7c3aed);border-radius:var(--r-lg);display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px;box-shadow:0 4px 20px rgba(139,92,246,0.5)}
+.auth-logo-mark{width:52px;height:52px;background:linear-gradient(135deg,#2563EB,#1044BB);border-radius:var(--r-lg);display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px;box-shadow:0 4px 20px rgba(37,99,235,0.4)}
 .auth-logo h1{font-size:20px;font-weight:700;letter-spacing:-0.03em;color:var(--txt1)}
 .auth-logo p{font-size:12px;color:var(--txt2);margin-top:4px}
 
@@ -64,9 +64,9 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
   background:rgba(6,6,16,0.85);backdrop-filter:blur(14px);
   border-bottom:1px solid var(--bd1)}
 .topbar-left{display:flex;align-items:center;gap:9px}
-.topbar-mark{width:30px;height:30px;background:linear-gradient(135deg,#a855f7,#7c3aed);border-radius:8px;
+.topbar-mark{width:30px;height:30px;background:linear-gradient(135deg,#2563EB,#1044BB);border-radius:8px;
   display:flex;align-items:center;justify-content:center;font-size:14px;
-  box-shadow:0 0 10px rgba(139,92,246,0.45)}
+  box-shadow:0 0 10px rgba(37,99,235,0.35)}
 .topbar-title{font-size:14px;font-weight:700;letter-spacing:-0.02em;color:var(--txt1)}
 .topbar-right{display:flex;align-items:center;gap:8px}
 
@@ -87,8 +87,9 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
 .admin-row{display:flex;gap:7px;align-items:flex-end}
 .admin-row input{flex:1;padding:6px 9px;font-size:12px;border:1px solid var(--bd2);border-radius:var(--r-md);background:var(--bg2);color:var(--txt1);outline:none}
 .admin-row input:focus{border-color:var(--accent)}
-.admin-btn{padding:6px 12px;font-size:12px;font-weight:700;border-radius:var(--r-md);border:none;cursor:pointer;background:var(--accent);color:#fff;white-space:nowrap;transition:opacity 0.15s;box-shadow:var(--accent-glow)}
+.admin-btn{padding:6px 12px;font-size:12px;font-weight:700;border-radius:var(--r-md);border:none;cursor:pointer;background:var(--accent);color:#fff;white-space:nowrap;transition:opacity 0.15s}
 .admin-btn:hover{opacity:0.85}
+.admin-btn.danger{background:var(--red)}
 
 /* ── Game search ── */
 .game-select-row{display:flex;gap:7px;margin-bottom:.75rem}
@@ -96,9 +97,9 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
 .game-select-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
 .game-select-row input::placeholder{color:var(--txt3)}
 .fetch-btn{padding:9px 16px;font-size:13px;font-weight:700;border-radius:var(--r-md);border:none;
-  background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;cursor:pointer;white-space:nowrap;
-  transition:opacity 0.15s,box-shadow 0.15s;box-shadow:0 0 14px rgba(139,92,246,0.35)}
-.fetch-btn:hover{opacity:0.88;box-shadow:0 0 20px rgba(139,92,246,0.5)}
+  background:linear-gradient(135deg,#2563EB,#1044BB);color:#fff;cursor:pointer;white-space:nowrap;
+  transition:opacity 0.15s,box-shadow 0.15s;box-shadow:0 2px 10px rgba(37,99,235,0.3)}
+.fetch-btn:hover{opacity:0.88;box-shadow:0 4px 16px rgba(37,99,235,0.45)}
 
 /* ── Game card ── */
 .game-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--card-shadow)}
@@ -192,6 +193,29 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
 .cancel-lnk:hover{color:var(--red)}
 .empty-state{font-size:11px;color:var(--txt3);padding:8px 2px}
 
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.65);display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);width:min(540px,96vw);max-height:85vh;overflow-y:auto;padding:20px;box-shadow:0 8px 40px rgba(0,0,0,0.7)}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--bd1)}
+.modal-hdr-title{font-size:15px;font-weight:700;color:var(--txt1)}
+.modal-close{background:none;border:none;color:var(--txt2);cursor:pointer;font-size:22px;line-height:1;padding:0 2px}
+.modal-close:hover{color:var(--txt1)}
+
+/* ── Profile ── */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+.stat-box{background:var(--bg2);border:1px solid var(--bd1);border-radius:var(--r-md);padding:12px;text-align:center}
+.stat-val{font-size:18px;font-weight:700;color:var(--txt1);font-variant-numeric:tabular-nums}
+.stat-lbl{font-size:10px;color:var(--txt2);margin-top:3px;text-transform:uppercase;letter-spacing:0.06em}
+.tx-row{display:flex;justify-content:space-between;align-items:center;padding:9px 2px;border-bottom:1px solid var(--bd1)}
+.tx-row:last-child{border-bottom:none}
+.tx-desc{font-size:12px;color:var(--txt1)}
+.tx-time{font-size:10px;color:var(--txt3);margin-top:2px}
+.tx-amt{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;margin-left:12px}
+
+/* ── Live board ── */
+.board-wrap{border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--bd1);margin-bottom:1rem;background:#1a1a1a}
+
 /* ── Toast ── */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(8px);
   background:var(--bg2);color:var(--txt1);border:1px solid var(--bd2);
@@ -231,7 +255,7 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
     </div>
     <div class="topbar-right">
       <div class="balance-chip"><span id="balance-display">0</span> pawns</div>
-      <div class="user-chip">
+      <div class="user-chip" onclick="openProfile()" style="cursor:pointer" title="View profile & history">
         <div class="user-avatar" id="user-avatar">?</div>
         <span class="user-name" id="user-display">—</span>
       </div>
@@ -241,11 +265,12 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
 
   <div id="admin-panel" style="display:none">
     <div class="admin-panel">
-      <div class="admin-panel-title">&#9733; Admin — add pawns to user</div>
+      <div class="admin-panel-title">&#9733; Admin — manage pawns</div>
       <div class="admin-row">
         <input type="text" id="admin-target" placeholder="username" />
         <input type="number" id="admin-amount" placeholder="amount" min="1" style="max-width:90px" />
-        <button class="admin-btn" onclick="adminAddPawns()">Add pawns</button>
+        <button class="admin-btn" onclick="adminPawns(1)">Add</button>
+        <button class="admin-btn danger" onclick="adminPawns(-1)">Remove</button>
       </div>
       <div class="status-msg" id="admin-msg" style="margin-top:8px;margin-bottom:0"></div>
     </div>
@@ -279,6 +304,13 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
         <div class="live-pill"><span class="live-dot"></span>live</div>
         <div class="move-tag" id="move-tag">move —</div>
         <div class="atomic-tag">&#9889; atomic</div>
+      </div>
+    </div>
+
+    <div id="game-board-wrap" style="display:none">
+      <div class="section-lbl" style="margin-bottom:8px">Live board</div>
+      <div class="board-wrap">
+        <iframe id="game-iframe" src="" width="100%" style="aspect-ratio:1;border:0;display:block;max-height:480px" allowtransparency="true"></iframe>
       </div>
     </div>
 
@@ -357,6 +389,16 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
     </div>
   </div>
 
+</div>
+
+<div class="modal-overlay" id="profile-modal" onclick="closeProfile(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <div class="modal-hdr-title">My Profile</div>
+      <button class="modal-close" onclick="closeProfile()">&#215;</button>
+    </div>
+    <div id="profile-content"><div style="text-align:center;padding:24px;color:var(--txt2)">Loading…</div></div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -559,14 +601,15 @@ function doSignout() {
   go('login');
 }
 
-async function adminAddPawns() {
+async function adminPawns(sign) {
   const target = document.getElementById('admin-target').value.trim().toLowerCase();
-  const amount = parseInt(document.getElementById('admin-amount').value) || 0;
-  if (!target || amount <= 0) { showMsg('admin-msg', 'Enter a username and positive amount.', 'err'); return; }
+  const amount = (parseInt(document.getElementById('admin-amount').value) || 0) * sign;
+  if (!target || amount === 0) { showMsg('admin-msg', 'Enter a username and amount.', 'err'); return; }
   const r = await api('/api/admin/pawns', { target, amount });
   const d = await r.json();
   if (!r.ok) { showMsg('admin-msg', d.error || 'Failed', 'err'); return; }
-  showMsg('admin-msg', `Added ${amount} pawns to ${target}. New balance: ${d.balance}`, 'ok');
+  const verb = amount > 0 ? `Added ${amount} to` : `Removed ${-amount} from`;
+  showMsg('admin-msg', `${verb} ${target}. Balance: ${d.balance}`, 'ok');
   if (target === currentUser) { userBalance = d.balance; renderBalance(); }
 }
 
@@ -644,6 +687,8 @@ async function loadGame(game) {
 
   wsSubscribe(game.id);
   document.getElementById('game-section').style.display = 'block';
+  document.getElementById('game-board-wrap').style.display = 'block';
+  document.getElementById('game-iframe').src = `https://lichess.org/embed/game/${game.id}?bg=dark&theme=brown`;
   selContract('white');
   renderAll();
   pollInterval = setInterval(() => pollGame(game.id), 5000);
@@ -720,6 +765,7 @@ async function placeOrder() {
   renderBalance();
   const msg = d.filled >= shares ? `Filled ${d.filled}` : d.filled > 0 ? `Filled ${d.filled}, rest resting` : 'Order placed';
   showToast(msg);
+  if (d.filled > 0) playDing();
   // WS broadcast will update book for all users
 }
 
@@ -837,6 +883,66 @@ function renderMyOrders() {
 }
 
 function renderAll() { renderBook(); renderCards(); renderBalance(); renderTrades(); renderMyOrders(); updateSummary(); }
+
+// ── Ding sound ────────────────────────────────────────────────────────────
+let _audioCtx = null;
+function playDing() {
+  try {
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = _audioCtx.createOscillator(), gain = _audioCtx.createGain();
+    osc.connect(gain); gain.connect(_audioCtx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1046, _audioCtx.currentTime);
+    osc.frequency.setValueAtTime(1318, _audioCtx.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.25, _audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + 0.55);
+    osc.start(_audioCtx.currentTime); osc.stop(_audioCtx.currentTime + 0.55);
+  } catch(_) {}
+}
+
+// ── Profile modal ─────────────────────────────────────────────────────────
+async function openProfile() {
+  const modal = document.getElementById('profile-modal');
+  modal.classList.add('open');
+  document.getElementById('profile-content').innerHTML = '<div style="text-align:center;padding:24px;color:var(--txt2)">Loading…</div>';
+  const r = await api('/api/profile');
+  if (!r.ok) { document.getElementById('profile-content').innerHTML = '<div class="empty-state">Failed to load profile.</div>'; return; }
+  const data = await r.json();
+  renderProfile(data);
+}
+
+function closeProfile(e) {
+  if (!e || e.target === document.getElementById('profile-modal'))
+    document.getElementById('profile-modal').classList.remove('open');
+}
+
+function renderProfile(data) {
+  const pnlColor = data.pnl >= 0 ? 'var(--green)' : 'var(--red)';
+  const pnlSign  = data.pnl > 0 ? '+' : '';
+  let html = `
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-val">${data.balance.toLocaleString()}</div><div class="stat-lbl">Balance</div></div>
+      <div class="stat-box"><div class="stat-val">${data.totalDeposited.toLocaleString()}</div><div class="stat-lbl">Deposited</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:${pnlColor}">${pnlSign}${data.pnl.toLocaleString()}</div><div class="stat-lbl">Net P&amp;L</div></div>
+    </div>
+    <div class="section-lbl" style="margin-bottom:8px">Transaction history</div>`;
+  if (!data.transactions.length) {
+    html += '<div class="empty-state">No transactions yet.</div>';
+  } else {
+    html += data.transactions.map(tx => {
+      const time = new Date(tx.time).toLocaleString();
+      let desc = '', amt = '', color = 'var(--txt1)';
+      if (tx.type === 'admin_add')    { desc = `Admin added pawns (by ${tx.by})`; amt = `+${tx.amount}`; color = 'var(--green)'; }
+      else if (tx.type === 'admin_remove') { desc = `Admin removed pawns (by ${tx.by})`; amt = `-${tx.amount}`; color = 'var(--red)'; }
+      else if (tx.type === 'fill' && tx.side === 'buy')  { desc = `Bought ${tx.shares}× ${tx.contractName} @ ${tx.price}¢`; amt = `-${tx.spent}`; color = 'var(--red)'; }
+      else if (tx.type === 'fill' && tx.side === 'sell') { desc = `Sold ${tx.shares}× ${tx.contractName} @ ${tx.price}¢`;   amt = `+${tx.received}`; color = 'var(--green)'; }
+      else if (tx.type === 'cancel' && tx.side === 'buy')  { desc = `Cancelled buy ${tx.shares}× ${tx.contractName} @ ${tx.price}¢`; amt = `+${tx.refunded} refund`; color = 'var(--txt2)'; }
+      else if (tx.type === 'cancel' && tx.side === 'sell') { desc = `Cancelled sell ${tx.shares}× ${tx.contractName} @ ${tx.price}¢`; }
+      return `<div class="tx-row"><div><div class="tx-desc">${desc}</div><div class="tx-time">${time}</div></div><div class="tx-amt" style="color:${color}">${amt}</div></div>`;
+    }).join('');
+  }
+  document.getElementById('profile-content').innerHTML = html;
+}
 
 // ── Boot ──────────────────────────────────────────────────────────────────
 wsConnect();

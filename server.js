@@ -14,7 +14,6 @@ const STATE_FILE = path.join(__dirname, 'state.json');
 let db = { users: {}, games: {} };
 try { db = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')); } catch (_) {}
 
-// In-memory sessions: token → username
 const sessions = new Map();
 
 function persist() {
@@ -22,8 +21,16 @@ function persist() {
 }
 
 function getUser(u) {
-  if (!db.users[u]) db.users[u] = { balance: 0 };
+  if (!db.users[u]) db.users[u] = { balance: 0, transactions: [], totalDeposited: 0 };
+  if (!db.users[u].transactions) db.users[u].transactions = [];
+  if (db.users[u].totalDeposited == null) db.users[u].totalDeposited = 0;
   return db.users[u];
+}
+
+function logTx(username, tx) {
+  const user = getUser(username);
+  user.transactions.unshift({ ...tx, time: Date.now() });
+  if (user.transactions.length > 200) user.transactions.length = 200;
 }
 
 function recalcMid(c) {
@@ -44,7 +51,7 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'atomic.html')));
 app.use(express.static(path.join(__dirname)));
 
 // ── WebSocket ─────────────────────────────────────────────────────────────
-const gameSubs = new Map(); // gameId → Set<ws>
+const gameSubs = new Map();
 
 function wsSubscribe(ws, gameId) {
   if (ws._gameId) gameSubs.get(ws._gameId)?.delete(ws);
@@ -89,7 +96,6 @@ function auth(req, res, next) {
 
 // ── Routes ────────────────────────────────────────────────────────────────
 
-// Exchange Lichess access token for a server session
 app.post('/api/login', async (req, res) => {
   const { lichessToken } = req.body;
   if (!lichessToken) return res.status(400).json({ error: 'lichessToken required' });
@@ -110,13 +116,22 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Fetch a user's balance
 app.get('/api/balance/:username', auth, (req, res) => {
   const user = db.users[req.params.username];
   res.json({ balance: user?.balance ?? 0 });
 });
 
-// Get or initialize a game
+app.get('/api/profile', auth, (req, res) => {
+  const user = getUser(req.username);
+  res.json({
+    username: req.username,
+    balance: user.balance,
+    totalDeposited: user.totalDeposited || 0,
+    pnl: user.balance - (user.totalDeposited || 0),
+    transactions: (user.transactions || []).slice(0, 100),
+  });
+});
+
 app.post('/api/game/init', auth, (req, res) => {
   const { gameId, mids } = req.body;
   if (!gameId) return res.status(400).json({ error: 'gameId required' });
@@ -134,7 +149,6 @@ app.post('/api/game/init', auth, (req, res) => {
   res.json(db.games[gameId]);
 });
 
-// Place an order
 app.post('/api/order', auth, (req, res) => {
   const { gameId, side, contract: ck, price, shares } = req.body;
   const username = req.username;
@@ -154,19 +168,21 @@ app.post('/api/order', auth, (req, res) => {
   if (side === 'buy') {
     const cost = price * shares;
     if (cost > user.balance) return res.status(400).json({ error: 'Insufficient balance' });
-    user.balance -= cost; // lock full cost upfront
+    user.balance -= cost;
 
     const matchable = c.asks.filter(a => a.price <= price).sort((a, b) => a.price - b.price);
     let rem = shares;
     for (const ask of matchable) {
       if (rem <= 0) break;
       const f = Math.min(rem, ask.size);
-      user.balance += (price - ask.price) * f; // refund overpay vs limit
+      user.balance += (price - ask.price) * f;
       rem -= f; ask.size -= f; filled += f;
       if (f > 0) {
-        const seller = db.users[ask.user];
-        if (seller) seller.balance += ask.price * f;
+        const seller = getUser(ask.user);
+        seller.balance += ask.price * f;
         game.trades.unshift({ contract: c.name, price: ask.price, size: f, time: Date.now(), dir: 'up' });
+        logTx(username, { type: 'fill', side: 'buy', contract: ck, contractName: c.name, price: ask.price, shares: f, spent: ask.price * f });
+        logTx(ask.user, { type: 'fill', side: 'sell', contract: ck, contractName: c.name, price: ask.price, shares: f, received: ask.price * f });
       }
     }
     c.asks = c.asks.filter(a => a.size > 0);
@@ -178,10 +194,12 @@ app.post('/api/order', auth, (req, res) => {
     for (const bid of matchable) {
       if (rem <= 0) break;
       const f = Math.min(rem, bid.size);
-      user.balance += bid.price * f; // seller receives at bid price
+      user.balance += bid.price * f;
       rem -= f; bid.size -= f; filled += f;
       if (f > 0) {
         game.trades.unshift({ contract: c.name, price: bid.price, size: f, time: Date.now(), dir: 'dn' });
+        logTx(username, { type: 'fill', side: 'sell', contract: ck, contractName: c.name, price: bid.price, shares: f, received: bid.price * f });
+        logTx(bid.user,  { type: 'fill', side: 'buy',  contract: ck, contractName: c.name, price: bid.price, shares: f, spent: bid.price * f });
       }
     }
     c.bids = c.bids.filter(b => b.size > 0);
@@ -195,7 +213,6 @@ app.post('/api/order', auth, (req, res) => {
   res.json({ ok: true, balance: user.balance, filled });
 });
 
-// Cancel an order
 app.post('/api/cancel', auth, (req, res) => {
   const { gameId, contract: ck, orderId, side } = req.body;
   const username = req.username;
@@ -209,11 +226,13 @@ app.post('/api/cancel', auth, (req, res) => {
   if (side === 'buy') {
     const order = c.bids.find(b => b.id === orderId && b.user === username);
     if (!order) return res.status(404).json({ error: 'Order not found' });
-    user.balance += order.price * order.size; // refund locked cost
+    user.balance += order.price * order.size;
+    logTx(username, { type: 'cancel', side: 'buy', contract: ck, contractName: c.name, price: order.price, shares: order.size, refunded: order.price * order.size });
     c.bids = c.bids.filter(b => b.id !== orderId);
   } else {
     const order = c.asks.find(a => a.id === orderId && a.user === username);
     if (!order) return res.status(404).json({ error: 'Order not found' });
+    logTx(username, { type: 'cancel', side: 'sell', contract: ck, contractName: c.name, price: order.price, shares: order.size });
     c.asks = c.asks.filter(a => a.id !== orderId);
   }
 
@@ -222,13 +241,16 @@ app.post('/api/cancel', auth, (req, res) => {
   res.json({ ok: true, balance: user.balance });
 });
 
-// Admin: add pawns to a user
+// Admin: add or remove pawns (negative amount = remove)
 app.post('/api/admin/pawns', auth, (req, res) => {
   if (req.username !== ADMIN) return res.status(403).json({ error: 'Forbidden' });
   const { target, amount } = req.body;
-  if (!target || amount <= 0) return res.status(400).json({ error: 'Invalid params' });
+  if (!target || amount == null || amount === 0) return res.status(400).json({ error: 'Invalid params' });
   const user = getUser(target);
+  if (amount < 0 && user.balance + amount < 0) return res.status(400).json({ error: 'Cannot remove more than current balance' });
   user.balance += amount;
+  if (amount > 0) user.totalDeposited = (user.totalDeposited || 0) + amount;
+  logTx(target, { type: amount > 0 ? 'admin_add' : 'admin_remove', amount: Math.abs(amount), by: ADMIN });
   persist();
   const msg = JSON.stringify({ type: 'balance', username: target, balance: user.balance });
   wss.clients.forEach(ws => { if (ws.readyState === 1) ws.send(msg); });
