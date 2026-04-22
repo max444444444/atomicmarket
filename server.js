@@ -13,12 +13,15 @@ const STATE_FILE = path.join(__dirname, 'state.json');
 function isAdmin(u) { return ADMINS.has(u); }
 
 // ── Persistent state ──────────────────────────────────────────────────────
-let db = { users: {}, games: {} };
+let db = { users: {}, games: {}, sessions: {} };
 try { db = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')); } catch (_) {}
+if (!db.sessions) db.sessions = {};
 
-const sessions = new Map();
+// Restore sessions from disk so logins survive server restarts
+const sessions = new Map(Object.entries(db.sessions));
 
 function persist() {
+  db.sessions = Object.fromEntries(sessions);
   fs.writeFileSync(STATE_FILE, JSON.stringify(db));
 }
 
