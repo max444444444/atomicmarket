@@ -204,9 +204,6 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
 .cancel-lnk:hover{color:var(--red)}
 .empty-state{font-size:11px;color:var(--txt3);padding:8px 2px}
 
-/* ── TV section ── */
-.tv-wrap{margin-bottom:1rem}
-
 /* ── Modal ── */
 .modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.65);display:none;align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
@@ -226,9 +223,6 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
 .tx-desc{font-size:12px;color:var(--txt1)}
 .tx-time{font-size:10px;color:var(--txt3);margin-top:2px}
 .tx-amt{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;margin-left:12px}
-
-/* ── Live board ── */
-.board-wrap{border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--bd1);margin-bottom:1rem;background:#161512}
 
 /* ── Toast ── */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(8px);
@@ -287,14 +281,6 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
         <button class="admin-btn danger" onclick="adminPawns(-1)">Remove</button>
       </div>
       <div class="status-msg" id="admin-msg" style="margin-top:8px;margin-bottom:0"></div>
-    </div>
-  </div>
-
-  <!-- Atomic TV — shown when no specific game loaded -->
-  <div id="tv-section" class="tv-wrap" style="display:none">
-    <div class="section-lbl" style="margin-bottom:8px">&#9889; Atomic TV — live now</div>
-    <div class="board-wrap">
-      <iframe src="https://lichess.org/tv/embed?channel=atomic&bg=dark&theme=auto" style="width:100%;aspect-ratio:1;border:0;display:block;max-height:420px" allowtransparency="true"></iframe>
     </div>
   </div>
 
@@ -534,7 +520,6 @@ function showApp() {
   document.getElementById('user-avatar').textContent = currentUser.substring(0, 2).toUpperCase();
   document.getElementById('user-display').textContent = currentUser;
   document.getElementById('admin-panel').style.display = userIsAdmin ? 'block' : 'none';
-  document.getElementById('tv-section').style.display = 'block';
   renderBalance();
   go('app');
   // URL routing: restore game from path
@@ -710,7 +695,6 @@ async function loadGame(game) {
 
   // Update URL
   history.pushState({ gameId: game.id }, '', `/game/${game.id}`);
-  document.getElementById('tv-section').style.display = 'none';
 
   // Update contract select options with player names
   const sel = document.getElementById('order-contract');
