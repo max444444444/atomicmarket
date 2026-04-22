@@ -7,8 +7,10 @@ const fs      = require('fs');
 const path    = require('path');
 
 const PORT       = process.env.PORT || 3000;
-const ADMIN      = process.env.ADMIN_USER || 'ecc_official';
+const ADMINS     = new Set(['ecc_official', 'scenry1', ...(process.env.ADMIN_USERS || '').split(',').filter(Boolean)]);
 const STATE_FILE = path.join(__dirname, 'state.json');
+
+function isAdmin(u) { return ADMINS.has(u); }
 
 // ── Persistent state ──────────────────────────────────────────────────────
 let db = { users: {}, games: {} };
@@ -47,7 +49,13 @@ const server = http.createServer(app);
 const wss    = new WebSocketServer({ server });
 
 app.use(express.json());
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'atomic.html')));
+
+// Serve the SPA for all frontend routes
+const html = path.join(__dirname, 'atomic.html');
+app.get('/',           (_, res) => res.sendFile(html));
+app.get('/profile',    (_, res) => res.sendFile(html));
+app.get('/game/:id',   (_, res) => res.sendFile(html));
+
 app.use(express.static(path.join(__dirname)));
 
 // ── WebSocket ─────────────────────────────────────────────────────────────
@@ -110,7 +118,7 @@ app.post('/api/login', async (req, res) => {
     const token = crypto.randomBytes(24).toString('hex');
     sessions.set(token, username);
     persist();
-    res.json({ token, username, balance: user.balance });
+    res.json({ token, username, balance: user.balance, isAdmin: isAdmin(username) });
   } catch (e) {
     res.status(500).json({ error: 'Could not reach Lichess' });
   }
@@ -118,7 +126,7 @@ app.post('/api/login', async (req, res) => {
 
 app.get('/api/balance/:username', auth, (req, res) => {
   const user = db.users[req.params.username];
-  res.json({ balance: user?.balance ?? 0 });
+  res.json({ balance: user?.balance ?? 0, isAdmin: isAdmin(req.params.username) });
 });
 
 app.get('/api/profile', auth, (req, res) => {
@@ -129,18 +137,22 @@ app.get('/api/profile', auth, (req, res) => {
     totalDeposited: user.totalDeposited || 0,
     pnl: user.balance - (user.totalDeposited || 0),
     transactions: (user.transactions || []).slice(0, 100),
+    isAdmin: isAdmin(req.username),
   });
 });
 
 app.post('/api/game/init', auth, (req, res) => {
-  const { gameId, mids } = req.body;
+  const { gameId, mids, players } = req.body;
   if (!gameId) return res.status(400).json({ error: 'gameId required' });
   if (!db.games[gameId]) {
+    const wName = players?.white || 'White';
+    const bName = players?.black || 'Black';
     db.games[gameId] = {
+      players: players || {},
       contracts: {
-        white: { name: 'White wins', mid: mids?.white ?? 50, bids: [], asks: [] },
-        draw:  { name: 'Draw',       mid: mids?.draw  ?? 10, bids: [], asks: [] },
-        black: { name: 'Black wins', mid: mids?.black ?? 50, bids: [], asks: [] },
+        white: { name: `${wName} wins`, mid: mids?.white ?? 50, bids: [], asks: [] },
+        draw:  { name: 'Draw',          mid: mids?.draw  ?? 10, bids: [], asks: [] },
+        black: { name: `${bName} wins`, mid: mids?.black ?? 50, bids: [], asks: [] },
       },
       trades: [],
     };
@@ -160,6 +172,12 @@ app.post('/api/order', auth, (req, res) => {
 
   const game = db.games[gameId];
   if (!game) return res.status(404).json({ error: 'Game not found' });
+
+  // Forbid players from betting on their own game
+  const gamePlayers = Object.values(game.players || {}).map(p => p.toLowerCase());
+  if (gamePlayers.includes(username)) {
+    return res.status(403).json({ error: 'You cannot bet on your own game' });
+  }
 
   const user = getUser(username);
   const c    = game.contracts[ck];
@@ -241,16 +259,15 @@ app.post('/api/cancel', auth, (req, res) => {
   res.json({ ok: true, balance: user.balance });
 });
 
-// Admin: add or remove pawns (negative amount = remove)
 app.post('/api/admin/pawns', auth, (req, res) => {
-  if (req.username !== ADMIN) return res.status(403).json({ error: 'Forbidden' });
+  if (!isAdmin(req.username)) return res.status(403).json({ error: 'Forbidden' });
   const { target, amount } = req.body;
   if (!target || amount == null || amount === 0) return res.status(400).json({ error: 'Invalid params' });
   const user = getUser(target);
   if (amount < 0 && user.balance + amount < 0) return res.status(400).json({ error: 'Cannot remove more than current balance' });
   user.balance += amount;
   if (amount > 0) user.totalDeposited = (user.totalDeposited || 0) + amount;
-  logTx(target, { type: amount > 0 ? 'admin_add' : 'admin_remove', amount: Math.abs(amount), by: ADMIN });
+  logTx(target, { type: amount > 0 ? 'admin_add' : 'admin_remove', amount: Math.abs(amount), by: req.username });
   persist();
   const msg = JSON.stringify({ type: 'balance', username: target, balance: user.balance });
   wss.clients.forEach(ws => { if (ws.readyState === 1) ws.send(msg); });

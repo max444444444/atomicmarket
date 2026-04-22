@@ -30,7 +30,7 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
   background:var(--bg0);
   background-image:radial-gradient(ellipse 80% 50% at 50% -5%, rgba(20,50,120,0.14) 0%, transparent 60%)}
 
-.page{padding:0 1.5rem 2rem;max-width:1200px;margin:0 auto;position:relative}
+.page{padding:0 1.25rem 2rem;max-width:920px;margin:0 auto;position:relative}
 
 .screen{display:none}
 .screen.active{display:block}
@@ -122,20 +122,33 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
 
 .section-lbl{font-size:9px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:7px}
 
-/* ── Contracts ── */
-.contracts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
-.contract-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);padding:12px;cursor:pointer;transition:border-color 0.15s,box-shadow 0.15s;box-shadow:var(--card-shadow)}
-.contract-card:hover{border-color:var(--bd2)}
-.contract-card.sel{border-color:var(--accent);box-shadow:var(--accent-glow),var(--card-shadow)}
-.cc-label{font-size:10px;color:var(--txt2);margin-bottom:6px;font-weight:600}
-.cc-price{font-size:30px;font-weight:700;margin-bottom:3px;letter-spacing:-0.03em;color:var(--txt1)}
-.cc-spread{font-size:10px;color:var(--txt2)}
-.cc-vol{font-size:10px;color:var(--txt3);margin-top:2px}
+/* ── Two-column layout ── */
+.app-grid{display:grid;grid-template-columns:1fr 290px;gap:14px;align-items:start}
+.app-main{min-width:0}
+.app-panel{position:sticky;top:58px}
+@media(max-width:680px){.app-grid{grid-template-columns:1fr}.app-panel{position:static}}
 
-/* ── Market grid ── */
-.market-grid{display:grid;grid-template-columns:1.1fr 0.9fr;gap:10px;margin-bottom:1rem}
+/* ── Kalshi-style contracts table ── */
+.ct-wrap{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);margin-bottom:12px;overflow:hidden;box-shadow:var(--card-shadow)}
+.ct{width:100%;border-collapse:collapse}
+.ct th{font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:0.08em;padding:8px 12px;text-align:left;border-bottom:1px solid var(--bd1);background:var(--bg2)}
+.ct th:nth-child(2){text-align:right}
+.ct td{padding:11px 12px;border-bottom:1px solid var(--bd1);vertical-align:middle}
+.ct tr:last-child td{border-bottom:none}
+.ct tr.ct-sel td{background:rgba(37,99,235,0.06)}
+.ct tr:hover td{background:var(--bg2);cursor:pointer}
+.ct-name{font-size:13px;font-weight:600;color:var(--txt1)}
+.ct-sub{font-size:10px;color:var(--txt3);margin-top:2px}
+.ct-pct{font-size:17px;font-weight:700;color:var(--txt1);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.ct-btns{display:flex;gap:6px;justify-content:flex-end;white-space:nowrap}
+.yn-btn{padding:5px 13px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid;transition:all 0.12s;white-space:nowrap}
+.yn-btn.yes{border-color:var(--green);color:var(--green);background:transparent}
+.yn-btn.yes:hover,.yn-btn.yes.active{background:var(--green);color:#000}
+.yn-btn.no{border-color:var(--red);color:var(--red);background:transparent}
+.yn-btn.no:hover,.yn-btn.no.active{background:var(--red);color:#fff}
 
-.book-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);padding:12px;box-shadow:var(--card-shadow)}
+/* ── Order book ── */
+.book-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);padding:12px;box-shadow:var(--card-shadow);margin-bottom:12px}
 .book-hdr{font-size:9px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px}
 .book-cols-row{display:grid;grid-template-columns:1fr 1fr 1fr;font-size:9px;color:var(--txt3);padding:0 3px;margin-bottom:5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase}
 .book-cols-row span:not(:first-child){text-align:right}
@@ -147,51 +160,52 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
 .book-level.bid .p{color:var(--green)}
 .book-level .sz{color:var(--txt2);font-variant-numeric:tabular-nums}
 .book-level .tot{color:var(--txt3);font-size:10px;font-variant-numeric:tabular-nums}
-
 .spread-row{display:flex;align-items:center;gap:7px;margin:7px 0}
 .dbar{flex:1;height:2px;background:var(--bg2);border-radius:2px;overflow:hidden}
-.dfill-ask{height:100%;background:var(--red);transition:width 0.35s;box-shadow:0 0 4px var(--red)}
-.dfill-bid{height:100%;background:var(--green);transition:width 0.35s;box-shadow:0 0 4px var(--green)}
+.dfill-ask{height:100%;background:var(--red);transition:width 0.35s}
+.dfill-bid{height:100%;background:var(--green);transition:width 0.35s}
 .mid-lbl{font-size:12px;font-weight:700;min-width:34px;text-align:center;color:var(--txt1);font-variant-numeric:tabular-nums}
 
-/* ── Order entry ── */
-.order-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);padding:12px;box-shadow:var(--card-shadow)}
-.order-hdr{font-size:9px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px}
-
-.side-tabs{display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--bg2);border:1px solid var(--bd1);border-radius:var(--r-md);overflow:hidden;margin-bottom:10px;padding:3px;gap:3px}
-.side-tab{padding:7px;font-size:12px;font-weight:700;text-align:center;cursor:pointer;background:transparent;border:none;color:var(--txt3);transition:all 0.15s;border-radius:6px}
-.side-tab.buy-active{ background:var(--green);color:#000;box-shadow:0 0 10px rgba(0,209,122,0.4)}
-.side-tab.sell-active{background:var(--red);  color:#fff;box-shadow:0 0 10px rgba(255,68,102,0.4)}
-
+/* ── Order panel ── */
+.order-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);padding:14px;box-shadow:var(--card-shadow);margin-bottom:12px}
+.order-hdr{font-size:9px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px}
+.buy-sell-tabs{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:12px;border-radius:var(--r-md);overflow:hidden;border:1px solid var(--bd1)}
+.bs-tab{padding:8px;font-size:12px;font-weight:700;text-align:center;cursor:pointer;background:var(--bg2);border:none;color:var(--txt3);transition:all 0.15s}
+.bs-tab.active-buy{background:var(--green);color:#000}
+.bs-tab.active-sell{background:var(--red);color:#fff}
+.yn-selector{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.yn-sel-btn{padding:8px;border-radius:var(--r-md);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--bd2);background:transparent;color:var(--txt2);transition:all 0.12s}
+.yn-sel-btn.yes-active{border-color:var(--green);background:var(--green-dim);color:var(--green)}
+.yn-sel-btn.no-active{border-color:var(--red);background:var(--red-dim);color:var(--red)}
 .ol{margin-bottom:9px}
 .ol label{display:block;font-size:9px;font-weight:800;color:var(--txt3);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em}
 .ol input,.ol select{width:100%;padding:8px 10px;font-size:12px;border:1px solid var(--bd2);border-radius:var(--r-md);background:var(--bg2);color:var(--txt1);outline:none;transition:border-color 0.15s,box-shadow 0.15s;font-variant-numeric:tabular-nums}
 .ol input:focus,.ol select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
 .ol select option{background:var(--bg2)}
-
-.order-summary-box{font-size:11px;color:var(--txt2);background:var(--bg2);border-radius:var(--r-md);padding:8px 10px;margin-bottom:9px;line-height:1.8;border:1px solid var(--bd1)}
+.order-summary-box{font-size:11px;color:var(--txt2);background:var(--bg2);border-radius:var(--r-md);padding:8px 10px;margin-bottom:10px;line-height:1.8;border:1px solid var(--bd1)}
 .order-summary-box strong{color:var(--txt1);font-weight:700}
-
-.place-btn{width:100%;padding:10px;font-size:13px;font-weight:700;border-radius:var(--r-md);border:none;cursor:pointer;transition:opacity 0.12s,transform 0.1s,box-shadow 0.15s;letter-spacing:0.01em}
-.place-btn.buy{ background:linear-gradient(135deg,#00e688,var(--green));color:#000;box-shadow:0 0 16px rgba(0,209,122,0.35)}
-.place-btn.sell{background:linear-gradient(135deg,#ff6680,var(--red)); color:#fff;box-shadow:0 0 16px rgba(255,68,102,0.35)}
+.place-btn{width:100%;padding:11px;font-size:13px;font-weight:700;border-radius:var(--r-md);border:none;cursor:pointer;transition:opacity 0.12s,transform 0.1s;letter-spacing:0.01em}
+.place-btn.buy{background:var(--green);color:#000}
+.place-btn.sell{background:var(--red);color:#fff}
 .place-btn:hover{opacity:0.88}
 .place-btn:active{opacity:0.8;transform:scale(0.99)}
 
 /* ── Trades & orders ── */
-.trades-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:1rem;box-shadow:var(--card-shadow)}
+.trades-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:12px;box-shadow:var(--card-shadow)}
 .trade-row{display:grid;grid-template-columns:1.5fr 0.7fr 0.5fr 0.8fr;font-size:11px;padding:5px 2px;border-bottom:1px solid var(--bd1)}
 .trade-row:last-child{border-bottom:none}
 .trade-hdr{font-size:9px;color:var(--txt3);font-weight:800;text-transform:uppercase;letter-spacing:0.06em}
 .trade-up{color:var(--green);font-weight:700}
 .trade-dn{color:var(--red);font-weight:700}
-
 .orders-card{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);padding:12px 14px;box-shadow:var(--card-shadow)}
 .my-order-row{display:flex;align-items:center;justify-content:space-between;font-size:11px;padding:6px 2px;border-bottom:1px solid var(--bd1)}
 .my-order-row:last-child{border-bottom:none}
 .cancel-lnk{font-size:10px;color:var(--txt3);cursor:pointer;background:none;border:none;transition:color 0.12s;font-weight:600}
 .cancel-lnk:hover{color:var(--red)}
 .empty-state{font-size:11px;color:var(--txt3);padding:8px 2px}
+
+/* ── TV section ── */
+.tv-wrap{margin-bottom:1rem}
 
 /* ── Modal ── */
 .modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.65);display:none;align-items:center;justify-content:center}
@@ -276,6 +290,14 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
     </div>
   </div>
 
+  <!-- Atomic TV — shown when no specific game loaded -->
+  <div id="tv-section" class="tv-wrap" style="display:none">
+    <div class="section-lbl" style="margin-bottom:8px">&#9889; Atomic TV — live now</div>
+    <div class="board-wrap">
+      <iframe src="https://lichess.org/tv/embed?channel=atomic&bg=dark&theme=auto" style="width:100%;aspect-ratio:1;border:0;display:block;max-height:420px" allowtransparency="true"></iframe>
+    </div>
+  </div>
+
   <div class="section-lbl" style="margin-bottom:8px">Find a game</div>
   <div class="game-select-row">
     <input id="username-input" placeholder="Lichess username playing atomic" />
@@ -284,7 +306,7 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
   <div class="status-msg" id="game-status"></div>
 
   <div id="game-section" style="display:none">
-    <div class="game-card">
+    <div class="game-card" style="margin-bottom:12px">
       <div class="player-col">
         <div class="player-row">
           <span class="piece-w">&#9812;</span>
@@ -307,85 +329,75 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
       </div>
     </div>
 
-    <div id="game-board-wrap" style="display:none">
-      <div class="section-lbl" style="margin-bottom:8px">Live board</div>
-      <div class="board-wrap">
-        <iframe id="game-iframe" src="" style="width:100%;aspect-ratio:1;border:0;display:block;max-height:560px" allowtransparency="true" scrolling="no"></iframe>
-      </div>
+    <div class="section-lbl" style="margin-bottom:8px">Contracts</div>
+    <div class="ct-wrap">
+      <table class="ct">
+        <thead><tr>
+          <th style="width:50%">Outcome</th>
+          <th style="width:15%">Chance</th>
+          <th style="width:35%;text-align:right;padding-right:12px">Trade</th>
+        </tr></thead>
+        <tbody id="contracts-tbody"></tbody>
+      </table>
     </div>
 
-    <div class="section-lbl">Contracts</div>
-    <div class="contracts-grid">
-      <div class="contract-card sel" id="cc-white" onclick="selContract('white')">
-        <div class="cc-label" id="ccl-white">White wins</div>
-        <div class="cc-price" style="color:var(--color-text-primary)" id="ccp-white">—</div>
-        <div class="cc-spread" id="ccs-white">no orders</div>
-        <div class="cc-vol" id="ccv-white">vol 0</div>
-      </div>
-      <div class="contract-card" id="cc-draw" onclick="selContract('draw')">
-        <div class="cc-label">Draw</div>
-        <div class="cc-price" style="color:#888780" id="ccp-draw">—</div>
-        <div class="cc-spread" id="ccs-draw">no orders</div>
-        <div class="cc-vol" id="ccv-draw">vol 0</div>
-      </div>
-      <div class="contract-card" id="cc-black" onclick="selContract('black')">
-        <div class="cc-label" id="ccl-black">Black wins</div>
-        <div class="cc-price" style="color:var(--color-text-secondary)" id="ccp-black">—</div>
-        <div class="cc-spread" id="ccs-black">no orders</div>
-        <div class="cc-vol" id="ccv-black">vol 0</div>
-      </div>
-    </div>
-
-    <div class="market-grid">
-      <div class="book-card">
-        <div class="book-hdr" id="book-title">Order book</div>
-        <div class="book-cols-row"><span>price (¢)</span><span>size</span><span>total</span></div>
-        <div id="ask-rows"></div>
-        <div class="spread-row">
-          <div class="dbar"><div class="dfill-ask" id="ask-depth" style="width:0"></div></div>
-          <div class="mid-lbl" id="mid-lbl">—</div>
-          <div class="dbar"><div class="dfill-bid" id="bid-depth" style="width:0"></div></div>
+    <div class="app-grid">
+      <div class="app-main">
+        <div class="section-lbl" style="margin-bottom:8px">Order book — <span id="book-contract-name" style="color:var(--txt2);font-weight:600;text-transform:none;letter-spacing:0"></span></div>
+        <div class="book-card">
+          <div class="book-cols-row"><span id="book-side-lbl">price (¢)</span><span>size</span><span>total</span></div>
+          <div id="ask-rows"></div>
+          <div class="spread-row">
+            <div class="dbar"><div class="dfill-ask" id="ask-depth" style="width:0"></div></div>
+            <div class="mid-lbl" id="mid-lbl">—</div>
+            <div class="dbar"><div class="dfill-bid" id="bid-depth" style="width:0"></div></div>
+          </div>
+          <div id="bid-rows"></div>
         </div>
-        <div id="bid-rows"></div>
+
+        <div class="section-lbl" style="margin-bottom:8px">Recent trades</div>
+        <div class="trades-card">
+          <div class="trade-row trade-hdr"><span>contract</span><span>price</span><span>size</span><span>time</span></div>
+          <div id="trade-feed"><div class="empty-state">No trades yet</div></div>
+        </div>
       </div>
 
-      <div class="order-card">
-        <div class="order-hdr">Place order</div>
-        <div class="side-tabs">
-          <button class="side-tab buy-active" id="tab-buy" onclick="setSide('buy')">Buy YES</button>
-          <button class="side-tab" id="tab-buyno" onclick="setSide('buyno')">Buy NO</button>
-          <button class="side-tab" id="tab-sell" onclick="setSide('sell')">Sell YES</button>
+      <div class="app-panel">
+        <div class="order-card">
+          <div class="order-hdr">Place order</div>
+          <div class="buy-sell-tabs">
+            <button class="bs-tab active-buy" id="tab-buysell-buy" onclick="setBuySell('buy')">Buy</button>
+            <button class="bs-tab" id="tab-buysell-sell" onclick="setBuySell('sell')">Sell</button>
+          </div>
+          <div class="yn-selector">
+            <button class="yn-sel-btn yes-active" id="tab-yn-yes" onclick="setYesNo('yes')">YES</button>
+            <button class="yn-sel-btn" id="tab-yn-no" onclick="setYesNo('no')">NO</button>
+          </div>
+          <div class="ol">
+            <label>Contract</label>
+            <select id="order-contract" onchange="onContractChange()">
+              <option value="white">White wins</option>
+              <option value="draw">Draw</option>
+              <option value="black">Black wins</option>
+            </select>
+          </div>
+          <div class="ol">
+            <label id="price-label">Price (¢ per share)</label>
+            <input type="number" id="order-price" min="1" max="99" value="50" oninput="updateSummary()">
+          </div>
+          <div class="ol">
+            <label>Shares</label>
+            <input type="number" id="order-shares" min="1" value="10" oninput="updateSummary()">
+          </div>
+          <div class="order-summary-box" id="order-summary"></div>
+          <button class="place-btn buy" id="place-btn" onclick="placeOrder()">Buy YES</button>
         </div>
-        <div class="ol">
-          <label>Contract</label>
-          <select id="order-contract" onchange="onContractChange()">
-            <option value="white">White wins</option>
-            <option value="draw">Draw</option>
-            <option value="black">Black wins</option>
-          </select>
+
+        <div class="section-lbl" style="margin-bottom:8px">My open orders</div>
+        <div class="orders-card" id="my-orders-list">
+          <div class="empty-state">No open orders</div>
         </div>
-        <div class="ol">
-          <label id="price-label">Price (¢ per share)</label>
-          <input type="number" id="order-price" min="1" max="99" value="50" oninput="updateSummary()">
-        </div>
-        <div class="ol">
-          <label>Shares</label>
-          <input type="number" id="order-shares" min="1" value="10" oninput="updateSummary()">
-        </div>
-        <div class="order-summary-box" id="order-summary"></div>
-        <button class="place-btn buy" id="place-btn" onclick="placeOrder()">Place buy order</button>
       </div>
-    </div>
-
-    <div class="section-lbl">Recent trades</div>
-    <div class="trades-card">
-      <div class="trade-row trade-hdr"><span>contract</span><span>price</span><span>size</span><span>time</span></div>
-      <div id="trade-feed"><div class="empty-state">No trades yet</div></div>
-    </div>
-
-    <div class="section-lbl" style="margin-top:1rem">My open orders</div>
-    <div class="orders-card" id="my-orders-list">
-      <div class="empty-state">No open orders</div>
     </div>
   </div>
 
@@ -405,19 +417,22 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
 </div>
 
 <script>
-const ADMIN = 'ecc_official';
+const ADMINS = new Set(['ecc_official', 'scenry1']);
 
 // ── State ─────────────────────────────────────────────────────────────────
 let currentUser     = null;
 let sessionToken    = null;
 let selectedContract = 'white';
-let side            = 'buy';
+let buySell         = 'buy';   // 'buy' | 'sell'
+let yesNo           = 'yes';   // 'yes' | 'no'
+let side            = 'buy';   // derived: buy/sell/buyno
 let tradeHistory    = [];
 let pollInterval    = null;
 let moveNum         = 0;
 let currentGameId   = null;
 let currentGameMeta = null;
 let userBalance     = 0;
+let userIsAdmin     = false;
 
 const contracts = {
   white: { name: 'White wins', mid: 50, bids: [], asks: [] },
@@ -508,18 +523,24 @@ function showToast(msg) {
 async function restoreSession() {
   if (!loadSession()) return;
   const r = await api(`/api/balance/${currentUser}`);
-  if (!r.ok) { saveSession(); return; } // session expired
+  if (!r.ok) { currentUser = null; sessionToken = null; saveSession(); return; }
   const d = await r.json();
   userBalance = d.balance;
+  userIsAdmin = !!d.isAdmin;
   showApp();
 }
 
 function showApp() {
   document.getElementById('user-avatar').textContent = currentUser.substring(0, 2).toUpperCase();
   document.getElementById('user-display').textContent = currentUser;
-  document.getElementById('admin-panel').style.display = currentUser === ADMIN ? 'block' : 'none';
+  document.getElementById('admin-panel').style.display = userIsAdmin ? 'block' : 'none';
+  document.getElementById('tv-section').style.display = 'block';
   renderBalance();
   go('app');
+  // URL routing: restore game from path
+  const m = location.pathname.match(/^\/game\/([^/?]+)/);
+  if (m) fetchGameById(m[1]);
+  else if (location.pathname === '/profile') openProfile();
 }
 
 // ── Lichess OAuth 2.0 + PKCE ──────────────────────────────────────────────
@@ -578,11 +599,11 @@ async function handleOAuthCallback() {
       body: JSON.stringify({ lichessToken: access_token }),
     });
     if (!loginRes.ok) throw new Error('Server login failed');
-    const { token, username, balance } = await loginRes.json();
-
-    sessionToken = token;
-    currentUser  = username;
-    userBalance  = balance;
+    const loginData = await loginRes.json();
+    sessionToken = loginData.token;
+    currentUser  = loginData.username;
+    userBalance  = loginData.balance;
+    userIsAdmin  = !!loginData.isAdmin;
     saveSession();
     clearMsg('login-msg');
     showApp();
@@ -591,10 +612,23 @@ async function handleOAuthCallback() {
   }
 }
 
+async function fetchGameById(gameId) {
+  showMsg('game-status', 'Loading game…', 'info');
+  try {
+    const res = await fetch(`https://lichess.org/api/game/${gameId}?moves=true&opening=true`, { headers: { Accept: 'application/json' } });
+    if (!res.ok) { showMsg('game-status', 'Game not found.', 'err'); return; }
+    const game = await res.json();
+    if (!isAtomic(game)) { showMsg('game-status', 'That game is not atomic.', 'err'); return; }
+    clearMsg('game-status');
+    loadGame(game);
+  } catch(e) { showMsg('game-status', 'Error: ' + e.message, 'err'); }
+}
+
 function doSignout() {
   currentUser = null; sessionToken = null; currentGameId = null; currentGameMeta = null;
-  userBalance = 0; tradeHistory = [];
+  userBalance = 0; tradeHistory = []; userIsAdmin = false;
   if (pollInterval) clearInterval(pollInterval);
+  history.pushState(null, '', '/');
   document.getElementById('game-section').style.display = 'none';
   clearMsg('game-status');
   saveSession();
@@ -674,8 +708,17 @@ async function loadGame(game) {
   currentGameMeta = { wn, bn, weloText, beloText };
   tradeHistory    = [];
 
-  // Init game on server (no-op if already exists) and get current state
-  const r = await api('/api/game/init', { gameId: game.id, mids: { white: wp2, draw: dp, black: bp2 } });
+  // Update URL
+  history.pushState({ gameId: game.id }, '', `/game/${game.id}`);
+  document.getElementById('tv-section').style.display = 'none';
+
+  // Update contract select options with player names
+  const sel = document.getElementById('order-contract');
+  sel.options[0].text = wn + ' wins';
+  sel.options[2].text = bn + ' wins';
+
+  // Init game on server with player names
+  const r = await api('/api/game/init', { gameId: game.id, mids: { white: wp2, draw: dp, black: bp2 }, players: { white: wn, black: bn } });
   if (r.ok) {
     const serverGame = await r.json();
     applyServerState(serverGame);
@@ -687,8 +730,6 @@ async function loadGame(game) {
 
   wsSubscribe(game.id);
   document.getElementById('game-section').style.display = 'block';
-  document.getElementById('game-board-wrap').style.display = 'block';
-  document.getElementById('game-iframe').src = `https://lichess.org/embed/game/${game.id}?bg=dark&theme=auto`;
   selContract('white');
   renderAll();
   pollInterval = setInterval(() => pollGame(game.id), 5000);
@@ -726,23 +767,42 @@ function settleGame(g) {
 // ── Order form ────────────────────────────────────────────────────────────
 function selContract(k) {
   selectedContract = k;
-  document.querySelectorAll('.contract-card').forEach(e => e.classList.remove('sel'));
-  document.getElementById('cc-' + k).classList.add('sel');
   document.getElementById('order-contract').value = k;
   document.getElementById('order-price').value = contracts[k].mid;
-  renderBook(); updateSummary();
+  renderBook(); renderContractsTable(); updateSummary();
 }
 function onContractChange() { selContract(document.getElementById('order-contract').value); }
 
-function setSide(s) {
-  side = s;
-  document.getElementById('tab-buy').className   = 'side-tab' + (s === 'buy'   ? ' buy-active'  : '');
-  document.getElementById('tab-buyno').className  = 'side-tab' + (s === 'buyno' ? ' sell-active' : '');
-  document.getElementById('tab-sell').className  = 'side-tab' + (s === 'sell'  ? ' sell-active' : '');
-  document.getElementById('place-btn').className  = 'place-btn ' + (s === 'buy' ? 'buy' : 'sell');
-  document.getElementById('place-btn').textContent = s === 'buy' ? 'Place buy order' : s === 'buyno' ? 'Place NO order' : 'Place sell order';
-  document.getElementById('price-label').textContent = s === 'buyno' ? 'NO price (¢ per share)' : 'Price (¢ per share)';
-  updateSummary();
+function deriveSide() {
+  if (buySell === 'buy' && yesNo === 'yes')  return 'buy';
+  if (buySell === 'buy' && yesNo === 'no')   return 'buyno';
+  if (buySell === 'sell' && yesNo === 'yes') return 'sell';
+  return 'sell'; // sell no = buy yes from counterparty pov, simplify to sell
+}
+
+function setBuySell(bs) {
+  buySell = bs;
+  document.getElementById('tab-buysell-buy').className  = 'bs-tab' + (bs === 'buy'  ? ' active-buy'  : '');
+  document.getElementById('tab-buysell-sell').className = 'bs-tab' + (bs === 'sell' ? ' active-sell' : '');
+  syncSide();
+}
+
+function setYesNo(yn) {
+  yesNo = yn;
+  document.getElementById('tab-yn-yes').className = 'yn-sel-btn' + (yn === 'yes' ? ' yes-active' : '');
+  document.getElementById('tab-yn-no').className  = 'yn-sel-btn' + (yn === 'no'  ? ' no-active'  : '');
+  syncSide();
+}
+
+function syncSide() {
+  side = deriveSide();
+  const isGreen = (buySell === 'buy' && yesNo === 'yes') || (buySell === 'sell' && yesNo === 'no');
+  document.getElementById('place-btn').className = 'place-btn ' + (isGreen ? 'buy' : 'sell');
+  const action = buySell === 'buy' ? 'Buy' : 'Sell';
+  const yn = yesNo === 'yes' ? 'YES' : 'NO';
+  document.getElementById('place-btn').textContent = `${action} ${yn}`;
+  document.getElementById('price-label').textContent = yesNo === 'no' ? 'NO price (¢ per share)' : 'Price (¢ per share)';
+  renderBook(); renderContractsTable(); updateSummary();
 }
 
 async function placeOrder() {
@@ -805,27 +865,38 @@ function aggLevels(orders) {
 
 function renderBook() {
   const k = selectedContract, c = contracts[k];
-  document.getElementById('book-title').textContent = 'Order book — ' + c.name;
-  document.getElementById('mid-lbl').textContent    = c.mid + '¢';
+  const isNo = (yesNo === 'no');
+  document.getElementById('book-contract-name').textContent = c.name;
+  document.getElementById('book-side-lbl').textContent = isNo ? 'NO price (¢)' : 'price (¢)';
 
-  const sa = aggLevels(c.asks).sort((a, b) => a.price - b.price);
-  const sb = aggLevels(c.bids).sort((a, b) => b.price - a.price);
+  let asks, bids;
+  if (isNo) {
+    // Flip: YES bids become NO asks, YES asks become NO bids (price = 100 - p)
+    asks = aggLevels(c.bids.map(b => ({ price: 100 - b.price, size: b.size }))).sort((a, b) => a.price - b.price);
+    bids = aggLevels(c.asks.map(a => ({ price: 100 - a.price, size: a.size }))).sort((a, b) => b.price - a.price);
+    const midNo = 100 - c.mid;
+    document.getElementById('mid-lbl').textContent = midNo + '¢';
+  } else {
+    asks = aggLevels(c.asks).sort((a, b) => a.price - b.price);
+    bids = aggLevels(c.bids).sort((a, b) => b.price - a.price);
+    document.getElementById('mid-lbl').textContent = c.mid + '¢';
+  }
 
-  let ah = '', at = sa.reduce((s, r) => s + r.size, 0);
-  [...sa].reverse().slice(0, 5).forEach(r => {
+  let ah = '', at = asks.reduce((s, r) => s + r.size, 0);
+  [...asks].reverse().slice(0, 5).forEach(r => {
     ah += `<div class="book-level ask" onclick="clickLevel(${r.price})"><span class="p">${r.price}</span><span class="sz">${r.size}</span><span class="tot">${at}</span></div>`;
     at -= r.size;
   });
   document.getElementById('ask-rows').innerHTML = ah;
 
   let bh = '', bt = 0;
-  sb.slice(0, 5).forEach(r => {
+  bids.slice(0, 5).forEach(r => {
     bt += r.size;
     bh += `<div class="book-level bid" onclick="clickLevel(${r.price})"><span class="p">${r.price}</span><span class="sz">${r.size}</span><span class="tot">${bt}</span></div>`;
   });
   document.getElementById('bid-rows').innerHTML = bh;
 
-  const tb = sb.reduce((s, r) => s + r.size, 0), ta = sa.reduce((s, r) => s + r.size, 0), tot = tb + ta || 1;
+  const tb = bids.reduce((s, r) => s + r.size, 0), ta = asks.reduce((s, r) => s + r.size, 0), tot = tb + ta || 1;
   document.getElementById('bid-depth').style.width = Math.round(tb / tot * 100) + '%';
   document.getElementById('ask-depth').style.width = Math.round(ta / tot * 100) + '%';
 }
@@ -841,16 +912,31 @@ function updateMids() {
   });
 }
 
-function renderCards() {
-  Object.entries(contracts).forEach(([k, c]) => {
+function renderContractsTable() {
+  const tbody = document.getElementById('contracts-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = Object.entries(contracts).map(([k, c]) => {
     const bb = c.bids.length ? Math.max(...c.bids.map(b => b.price)) : null;
     const ba = c.asks.length ? Math.min(...c.asks.map(a => a.price)) : null;
+    const yesPx = ba ?? c.mid;
+    const noPx  = 100 - (bb ?? c.mid);
     const vol = tradeHistory.filter(t => t.contract === c.name).reduce((s, t) => s + t.size, 0);
-    document.getElementById('ccp-' + k).textContent = c.mid + '¢';
-    document.getElementById('ccs-' + k).textContent = bb != null && ba != null ? 'bid ' + bb + ' · ask ' + ba : 'no orders';
-    document.getElementById('ccv-' + k).textContent = 'vol ' + vol;
-  });
+    const isSel = k === selectedContract;
+    const yesActive = isSel && yesNo === 'yes' ? ' active' : '';
+    const noActive  = isSel && yesNo === 'no'  ? ' active' : '';
+    const subText = vol > 0 ? `vol ${vol}` : (bb != null || ba != null ? `bid ${bb??'—'} · ask ${ba??'—'}` : 'no orders');
+    return `<tr class="${isSel ? 'ct-sel' : ''}" onclick="selContract('${k}')">
+      <td><div class="ct-name">${c.name}</div><div class="ct-sub">${subText}</div></td>
+      <td class="ct-pct">${c.mid}%</td>
+      <td><div class="ct-btns">
+        <button class="yn-btn yes${yesActive}" onclick="event.stopPropagation();selContract('${k}');setYesNo('yes')">Yes ${yesPx}¢</button>
+        <button class="yn-btn no${noActive}"  onclick="event.stopPropagation();selContract('${k}');setYesNo('no')">No ${noPx}¢</button>
+      </div></td>
+    </tr>`;
+  }).join('');
 }
+
+function renderCards() { renderContractsTable(); }
 
 function renderTrades() {
   const el = document.getElementById('trade-feed');
@@ -882,7 +968,7 @@ function renderMyOrders() {
   ).join('');
 }
 
-function renderAll() { renderBook(); renderCards(); renderBalance(); renderTrades(); renderMyOrders(); updateSummary(); }
+function renderAll() { renderBook(); renderContractsTable(); renderBalance(); renderTrades(); renderMyOrders(); updateSummary(); }
 
 // ── Ding sound ────────────────────────────────────────────────────────────
 let _audioCtx = null;
@@ -946,7 +1032,8 @@ function renderProfile(data) {
 
 // ── Boot ──────────────────────────────────────────────────────────────────
 wsConnect();
-restoreSession();
+syncSide();
 updateSummary();
+restoreSession();
 handleOAuthCallback();
 </script>
