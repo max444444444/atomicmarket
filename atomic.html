@@ -214,7 +214,7 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
 .modal-close:hover{color:var(--txt1)}
 
 /* ── Profile ── */
-.stat-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
 .stat-box{background:var(--bg2);border:1px solid var(--bd1);border-radius:var(--r-md);padding:12px;text-align:center}
 .stat-val{font-size:18px;font-weight:700;color:var(--txt1);font-variant-numeric:tabular-nums}
 .stat-lbl{font-size:10px;color:var(--txt2);margin-top:3px;text-transform:uppercase;letter-spacing:0.06em}
@@ -973,10 +973,11 @@ async function openProfile() {
   const modal = document.getElementById('profile-modal');
   modal.classList.add('open');
   document.getElementById('profile-content').innerHTML = '<div style="text-align:center;padding:24px;color:var(--txt2)">Loading…</div>';
-  const r = await api('/api/profile');
-  if (!r.ok) { document.getElementById('profile-content').innerHTML = '<div class="empty-state">Failed to load profile.</div>'; return; }
-  const data = await r.json();
-  renderProfile(data);
+  const [r1, r2] = await Promise.all([api('/api/profile'), api('/api/myorders')]);
+  if (!r1.ok) { document.getElementById('profile-content').innerHTML = '<div class="empty-state">Failed to load profile.</div>'; return; }
+  const data   = await r1.json();
+  const orders = r2.ok ? (await r2.json()).orders : [];
+  renderProfile(data, orders);
 }
 
 function closeProfile(e) {
@@ -984,16 +985,52 @@ function closeProfile(e) {
     document.getElementById('profile-modal').classList.remove('open');
 }
 
-function renderProfile(data) {
-  const pnlColor = data.pnl >= 0 ? 'var(--green)' : 'var(--red)';
-  const pnlSign  = data.pnl > 0 ? '+' : '';
+function renderProfile(data, orders) {
+  const pnlColor  = data.pnl >= 0 ? 'var(--green)' : 'var(--red)';
+  const pnlSign   = data.pnl > 0 ? '+' : '';
+  const tpnlColor = data.tradingPnl >= 0 ? 'var(--green)' : 'var(--red)';
+  const tpnlSign  = data.tradingPnl > 0 ? '+' : '';
   let html = `
     <div class="stat-grid">
       <div class="stat-box"><div class="stat-val">${data.balance.toLocaleString()}</div><div class="stat-lbl">Balance</div></div>
       <div class="stat-box"><div class="stat-val">${data.totalDeposited.toLocaleString()}</div><div class="stat-lbl">Deposited</div></div>
       <div class="stat-box"><div class="stat-val" style="color:${pnlColor}">${pnlSign}${data.pnl.toLocaleString()}</div><div class="stat-lbl">Net P&amp;L</div></div>
-    </div>
-    <div class="section-lbl" style="margin-bottom:8px">Transaction history</div>`;
+      <div class="stat-box"><div class="stat-val" style="color:${tpnlColor}">${tpnlSign}${data.tradingPnl.toLocaleString()}</div><div class="stat-lbl">Trading P&amp;L</div></div>
+    </div>`;
+
+  // Positions
+  const posEntries = Object.entries(data.positions || {}).filter(([,p]) => p.shares !== 0 || p.spent > 0 || p.received > 0);
+  if (posEntries.length) {
+    html += `<div class="section-lbl" style="margin-bottom:8px">Positions</div>`;
+    html += posEntries.map(([name, p]) => {
+      const netColor = p.shares > 0 ? 'var(--green)' : p.shares < 0 ? 'var(--red)' : 'var(--txt2)';
+      return `<div class="tx-row">
+        <div><div class="tx-desc">${name}</div><div class="tx-time">spent ${p.spent} · received ${p.received}</div></div>
+        <div class="tx-amt" style="color:${netColor}">${p.shares > 0 ? '+' : ''}${p.shares} shares</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Open orders
+  html += `<div class="section-lbl" style="margin-bottom:8px;margin-top:14px">Open orders</div>`;
+  if (!orders || !orders.length) {
+    html += '<div class="empty-state">No open orders.</div>';
+  } else {
+    html += orders.map(o => {
+      const sideColor = o.side === 'buy' ? 'var(--green)' : 'var(--red)';
+      const locked = o.locked > 0 ? ` · ${o.locked} locked` : '';
+      return `<div class="my-order-row">
+        <div style="flex:1">
+          <span style="color:${sideColor};font-weight:600;margin-right:6px">${o.side}</span>
+          <span style="color:var(--txt1)">${o.contractName}</span>
+          <span style="color:var(--txt2)"> · ${o.size} @ ${o.price}¢${locked}</span>
+        </div>
+        <button class="cancel-lnk" onclick="cancelOrderFromProfile('${o.gameId}','${o.contract}','${o.id}','${o.side}')">cancel</button>
+      </div>`;
+    }).join('');
+  }
+
+  html += `<div class="section-lbl" style="margin-bottom:8px;margin-top:14px">Transaction history</div>`;
   if (!data.transactions.length) {
     html += '<div class="empty-state">No transactions yet.</div>';
   } else {
@@ -1010,6 +1047,16 @@ function renderProfile(data) {
     }).join('');
   }
   document.getElementById('profile-content').innerHTML = html;
+}
+
+async function cancelOrderFromProfile(gameId, contractKey, orderId, side) {
+  const r = await api('/api/cancel', { gameId, contract: contractKey, orderId, side });
+  const d = await r.json();
+  if (!r.ok) { showToast(d.error || 'Cancel failed'); return; }
+  userBalance = d.balance;
+  renderBalance();
+  showToast('Order cancelled');
+  openProfile();
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────
