@@ -677,8 +677,6 @@ async function loadGame(game) {
   document.getElementById('player-black').textContent = bn;
   document.getElementById('elo-white').textContent    = weloText;
   document.getElementById('elo-black').textContent    = beloText;
-  document.getElementById('ccl-white').textContent    = wn + ' wins';
-  document.getElementById('ccl-black').textContent    = bn + ' wins';
   document.getElementById('game-link').href           = 'https://lichess.org/' + game.id;
   const moves = game.moves ? game.moves.trim().split(' ') : [];
   moveNum = moves.length;
