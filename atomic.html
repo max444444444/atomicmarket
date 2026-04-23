@@ -281,6 +281,7 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
         <input type="number" id="admin-amount" placeholder="amount" min="1" style="max-width:90px" />
         <button class="admin-btn" onclick="adminPawns(1)">Add</button>
         <button class="admin-btn danger" onclick="adminPawns(-1)">Remove</button>
+        <button class="admin-btn" onclick="adminSync()" style="background:var(--accent);margin-left:4px" title="Force-save all data to Redis now">Sync DB</button>
       </div>
       <div class="status-msg" id="admin-msg" style="margin-top:8px;margin-bottom:0"></div>
     </div>
@@ -625,6 +626,13 @@ function doSignout() {
   clearMsg('game-status');
   saveSession();
   go('login');
+}
+
+async function adminSync() {
+  const r = await api('/api/admin/sync', {});
+  const d = await r.json();
+  if (!r.ok) { showMsg('admin-msg', d.error || 'Sync failed', 'err'); return; }
+  showMsg('admin-msg', `Synced to Redis — ${d.users} users saved`, 'ok');
 }
 
 async function adminPawns(sign) {

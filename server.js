@@ -319,6 +319,13 @@ app.post('/api/cancel', auth, (req, res) => {
   res.json({ ok: true, balance: user.balance });
 });
 
+app.post('/api/admin/sync', auth, (req, res) => {
+  if (!isAdmin(req.username)) return res.status(403).json({ error: 'Forbidden' });
+  if (!REDIS_URL) return res.status(400).json({ error: 'Redis not configured' });
+  persist();
+  res.json({ ok: true, users: Object.keys(db.users).length });
+});
+
 app.post('/api/admin/pawns', auth, (req, res) => {
   if (!isAdmin(req.username)) return res.status(403).json({ error: 'Forbidden' });
   const { target, amount } = req.body;
@@ -349,7 +356,8 @@ async function init() {
     try { fs.writeFileSync(STATE_FILE, JSON.stringify(db)); } catch(_) {}
     console.log('State loaded from Redis');
   } else {
-    console.log('No Redis state found, using local file');
+    console.log('No Redis state found, using local file — saving current state to Redis');
+    redisSave(db);
   }
   server.listen(PORT, () => console.log(`AtomicMarket running on :${PORT}`));
 }
