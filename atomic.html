@@ -631,8 +631,12 @@ function doSignout() {
 async function adminSync() {
   const r = await api('/api/admin/sync', {});
   const d = await r.json();
-  if (!r.ok) { showMsg('admin-msg', d.error || 'Sync failed', 'err'); return; }
-  showMsg('admin-msg', `Synced to Redis — ${d.users} users saved`, 'ok');
+  if (!r.ok) {
+    const detail = d.envKeys?.length ? ` (found: ${d.envKeys.join(', ')})` : ' (no UPSTASH/REDIS vars found)';
+    showMsg('admin-msg', (d.error || 'Sync failed') + detail, 'err');
+    return;
+  }
+  showMsg('admin-msg', `Synced — ${d.users} users · Redis verified: ${d.redisVerified}`, 'ok');
 }
 
 async function adminPawns(sign) {
