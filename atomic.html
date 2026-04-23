@@ -226,6 +226,25 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
 .tx-time{font-size:10px;color:var(--txt3);margin-top:2px}
 .tx-amt{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;margin-left:12px}
 
+/* ── Settlement modal ── */
+.settle-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.75);display:none;align-items:center;justify-content:center}
+.settle-overlay.open{display:flex}
+.settle-box{background:var(--bg1);border:1px solid var(--bd1);border-radius:var(--r-lg);width:min(420px,92vw);padding:24px;box-shadow:0 8px 40px rgba(0,0,0,0.8),0 0 0 1px rgba(37,99,235,0.2);text-align:center}
+.settle-icon{font-size:48px;margin-bottom:12px;line-height:1}
+.settle-title{font-size:20px;font-weight:700;color:var(--txt1);margin-bottom:6px}
+.settle-sub{font-size:13px;color:var(--txt2);margin-bottom:20px}
+.settle-payout{background:var(--green-dim);border:1px solid rgba(0,199,0,0.25);border-radius:var(--r-md);padding:14px;margin-bottom:20px}
+.settle-payout-amt{font-size:28px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums}
+.settle-payout-lbl{font-size:11px;color:var(--txt2);margin-top:4px;text-transform:uppercase;letter-spacing:0.06em}
+.settle-no-payout{font-size:13px;color:var(--txt3);margin-bottom:20px;padding:12px;background:var(--bg2);border-radius:var(--r-md)}
+.settle-close-btn{width:100%;padding:11px;font-size:13px;font-weight:700;border-radius:var(--r-md);border:none;cursor:pointer;background:var(--accent);color:#fff}
+
+/* ── Resolved banner ── */
+.resolved-banner{background:linear-gradient(135deg,rgba(37,99,235,0.12),rgba(109,40,217,0.12));border:1px solid rgba(37,99,235,0.3);border-radius:var(--r-lg);padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.resolved-winner{font-size:15px;font-weight:700;color:var(--txt1)}
+.resolved-sub{font-size:11px;color:var(--txt2);margin-top:2px}
+.resolved-pill{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(37,99,235,0.3);padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap}
+
 /* ── Toast ── */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(8px);
   background:var(--bg2);color:var(--txt1);border:1px solid var(--bd2);
@@ -394,6 +413,16 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
 
 </div>
 
+<div class="settle-overlay" id="settle-modal">
+  <div class="settle-box">
+    <div class="settle-icon" id="settle-icon">🏁</div>
+    <div class="settle-title" id="settle-title">Market Resolved</div>
+    <div class="settle-sub" id="settle-sub"></div>
+    <div id="settle-payout-wrap"></div>
+    <button class="settle-close-btn" onclick="document.getElementById('settle-modal').classList.remove('open')">Close</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 </div>
 
@@ -425,10 +454,11 @@ let side            = 'buy';   // derived: buy/sell/buyno
 let tradeHistory    = [];
 let pollInterval    = null;
 let moveNum         = 0;
-let currentGameId   = null;
-let currentGameMeta = null;
-let userBalance     = 0;
-let userIsAdmin     = false;
+let currentGameId       = null;
+let currentGameMeta     = null;
+let currentGameResolved = null;  // { winner, winnerName } or null
+let userBalance         = 0;
+let userIsAdmin         = false;
 
 const contracts = {
   white: { name: 'White wins', mid: 50, bids: [], asks: [] },
@@ -493,6 +523,10 @@ function applyServerState(game) {
   Object.assign(contracts.draw,  game.contracts.draw);
   Object.assign(contracts.black, game.contracts.black);
   tradeHistory = game.trades || [];
+  if (game.resolved && !currentGameResolved) {
+    currentGameResolved = game.resolved;
+    renderResolvedBanner();
+  }
   renderAll();
 }
 
@@ -722,9 +756,10 @@ async function loadGame(game) {
   const bp2 = Math.round(Math.max(5, 45 - Math.min(30, Math.max(-30, diff / 20))));
   const dp  = Math.max(5, 100 - wp2 - bp2);
 
-  currentGameId   = game.id;
-  currentGameMeta = { wn, bn, weloText, beloText };
-  tradeHistory    = [];
+  currentGameId       = game.id;
+  currentGameMeta     = { wn, bn, weloText, beloText };
+  currentGameResolved = null;
+  tradeHistory        = [];
 
   // Update URL
   history.pushState({ gameId: game.id }, '', `/game/${game.id}`);
@@ -772,18 +807,71 @@ async function pollGame(id) {
   } catch (_) {}
 }
 
-function settleGame(g) {
-  const w = g.winner;
+async function settleGame(g) {
+  const winner = g.winner || (g.status === 'draw' ? 'draw' : null);
+  if (!winner || !currentGameId) return;
+
   const wn = document.getElementById('player-white').textContent;
   const bn = document.getElementById('player-black').textContent;
-  let msg = 'Game over · ';
-  if (w === 'white') msg += wn + ' wins!';
-  else if (w === 'black') msg += bn + ' wins!';
-  else msg += 'Draw!';
-  showMsg('game-status', msg, 'ok');
-  showToast('Market settled');
-  if (w) { contracts[w].mid = 99; contracts[w === 'white' ? 'black' : 'white'].mid = 1; contracts.draw.mid = 1; }
-  renderCards();
+  const winnerName = winner === 'white' ? `${wn} wins` : winner === 'black' ? `${bn} wins` : 'Draw';
+
+  try {
+    const r = await api('/api/game/settle', { gameId: currentGameId, winner });
+    if (r.ok) {
+      const data = await r.json();
+      if (!data.alreadyResolved) {
+        currentGameResolved = { winner, winnerName };
+        const myPayout = data.payouts?.[currentUser] || 0;
+        showSettlementModal(winnerName, myPayout, data.payouts);
+        if (myPayout > 0) { userBalance += myPayout; renderBalance(); }
+      }
+    }
+  } catch(_) {}
+
+  currentGameResolved = { winner, winnerName };
+  renderResolvedBanner();
+  renderAll();
+}
+
+function renderResolvedBanner() {
+  if (!currentGameResolved) return;
+  // Remove old banner if any
+  document.getElementById('resolved-banner')?.remove();
+  const { winnerName } = currentGameResolved;
+  const banner = document.createElement('div');
+  banner.id = 'resolved-banner';
+  banner.className = 'resolved-banner';
+  banner.innerHTML = `
+    <div style="flex:1">
+      <div class="resolved-winner">&#127941; ${winnerName}</div>
+      <div class="resolved-sub">This market has been resolved. Trading is closed.</div>
+    </div>
+    <div class="resolved-pill">Resolved</div>`;
+  const gameSection = document.getElementById('game-section');
+  const firstChild = gameSection?.querySelector('.game-card');
+  if (firstChild) firstChild.after(banner);
+  // Disable order form
+  const orderCard = document.querySelector('.order-card');
+  if (orderCard) orderCard.style.opacity = '0.45';
+  const placeBtn = document.getElementById('place-btn');
+  if (placeBtn) { placeBtn.disabled = true; placeBtn.textContent = 'Market Closed'; }
+  // Change live pill to resolved
+  const livePill = document.querySelector('.live-pill');
+  if (livePill) { livePill.style.color = 'var(--accent)'; livePill.style.background = 'var(--accent-dim)'; livePill.style.borderColor = 'rgba(37,99,235,0.3)'; livePill.innerHTML = '&#10003;&nbsp;Resolved'; }
+}
+
+function showSettlementModal(winnerName, myPayout, allPayouts) {
+  document.getElementById('settle-title').textContent = 'Market Resolved';
+  document.getElementById('settle-sub').textContent = `Winner: ${winnerName}`;
+  const wrap = document.getElementById('settle-payout-wrap');
+  if (myPayout > 0) {
+    wrap.innerHTML = `<div class="settle-payout"><div class="settle-payout-amt">+${myPayout} pawns</div><div class="settle-payout-lbl">Your payout</div></div>`;
+    document.getElementById('settle-icon').textContent = '🏆';
+  } else {
+    wrap.innerHTML = `<div class="settle-no-payout">You didn't hold any winning shares in this market.</div>`;
+    document.getElementById('settle-icon').textContent = '🏁';
+  }
+  document.getElementById('settle-modal').classList.add('open');
 }
 
 // ── Order form ────────────────────────────────────────────────────────────
@@ -1124,16 +1212,14 @@ function renderProfile(data, orders, isAdminView) {
   }
 
   // Positions
-  const posEntries = Object.entries(data.positions || {}).filter(([,p]) => p.shares !== 0 || p.spent > 0 || p.received > 0);
+  const posEntries = Object.entries(data.positions || {}).filter(([,p]) => p.shares > 0);
   if (posEntries.length) {
     html += `<div class="section-lbl" style="margin-bottom:8px;margin-top:4px">Current positions</div>
     <div class="profile-section">`;
-    html += posEntries.map(([name, p]) => {
-      const netColor = p.shares > 0 ? 'var(--green)' : p.shares < 0 ? 'var(--red)' : 'var(--txt2)';
-      const avgCost = p.shares > 0 && p.spent > 0 ? Math.round(p.spent / (p.shares + (sells.filter(t=>t.contractName===name).reduce((s,t)=>s+t.shares,0)))) : null;
+    html += posEntries.map(([label, p]) => {
       return `<div class="tx-row">
-        <div><div class="tx-desc">${name}</div><div class="tx-time">spent ${p.spent} · received ${p.received}</div></div>
-        <div class="tx-amt" style="color:${netColor}">${p.shares > 0 ? '+' : ''}${p.shares} shares</div>
+        <div><div class="tx-desc">${label}</div><div class="tx-time">open position · game ${p.gameId.substring(0,8)}</div></div>
+        <div class="tx-amt" style="color:var(--green)">+${p.shares} shares</div>
       </div>`;
     }).join('');
     html += '</div>';
@@ -1177,6 +1263,7 @@ function renderProfile(data, orders, isAdminView) {
       else if (tx.type === 'fill' && tx.side === 'sell') { desc = `Sold ${tx.shares}× ${tx.contractName} @ ${tx.price}¢`;   amt = `+${tx.received}`; color = 'var(--green)'; }
       else if (tx.type === 'cancel' && tx.side === 'buy')  { desc = `Cancelled buy ${tx.shares}× ${tx.contractName} @ ${tx.price}¢`; amt = `+${tx.refunded} refund`; color = 'var(--txt2)'; }
       else if (tx.type === 'cancel' && tx.side === 'sell') { desc = `Cancelled sell ${tx.shares}× ${tx.contractName} @ ${tx.price}¢`; }
+      else if (tx.type === 'settlement') { desc = `Market resolved — ${tx.contractName} won · ${tx.shares} shares`; amt = `+${tx.payout}`; color = 'var(--green)'; }
       return `<div class="tx-row"><div><div class="tx-desc">${desc}</div><div class="tx-time">${time}</div></div><div class="tx-amt" style="color:${color}">${amt}</div></div>`;
     }).join('');
   }

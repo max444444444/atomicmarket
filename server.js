@@ -182,6 +182,48 @@ app.get('/api/myorders', auth, (req, res) => {
   res.json({ orders: buildProfile(req.username).orders });
 });
 
+app.post('/api/game/settle', auth, (req, res) => {
+  const { gameId, winner } = req.body;
+  if (!['white', 'draw', 'black'].includes(winner))
+    return res.status(400).json({ error: 'Invalid winner' });
+  const game = db.games[gameId];
+  if (!game) return res.status(404).json({ error: 'Game not found' });
+  if (game.resolved) return res.json({ ok: true, alreadyResolved: true, ...game.resolved });
+
+  game.resolved = { winner, at: Date.now() };
+
+  // Pay 100 pawns per share to holders of the winning contract
+  const winningContract = game.contracts[winner];
+  const payouts = {};
+  for (const [username, user] of Object.entries(db.users)) {
+    const shares = user.shares?.[skey(gameId, winner)] || 0;
+    if (shares > 0) {
+      const payout = shares * 100;
+      user.balance += payout;
+      payouts[username] = payout;
+      logTx(username, { type: 'settlement', gameId, contract: winner, contractName: winningContract.name, shares, payout });
+    }
+  }
+
+  // Clear all share positions for this game (resolved, no longer tradeable)
+  for (const user of Object.values(db.users)) {
+    for (const ck of ['white', 'draw', 'black']) {
+      if (user.shares) delete user.shares[skey(gameId, ck)];
+    }
+  }
+
+  persist();
+  broadcast(gameId);
+
+  // Notify balance changes over WS
+  for (const [uname, payout] of Object.entries(payouts)) {
+    const msg = JSON.stringify({ type: 'balance', username: uname, balance: db.users[uname].balance });
+    wss.clients.forEach(ws => { if (ws.readyState === 1) ws.send(msg); });
+  }
+
+  res.json({ ok: true, winner, winnerName: winningContract.name, payouts });
+});
+
 app.post('/api/game/init', auth, (req, res) => {
   const { gameId, mids, players } = req.body;
   if (!gameId) return res.status(400).json({ error: 'gameId required' });
@@ -213,6 +255,7 @@ app.post('/api/order', auth, (req, res) => {
 
   const game = db.games[gameId];
   if (!game) return res.status(404).json({ error: 'Game not found' });
+  if (game.resolved) return res.status(400).json({ error: 'This market has already resolved' });
 
   const gamePlayers = Object.values(game.players || {}).map(p => p.toLowerCase());
   if (gamePlayers.includes(username)) {
@@ -369,14 +412,23 @@ app.post('/api/admin/pawns', auth, (req, res) => {
 function buildProfile(username) {
   const user = getUser(username);
   const txs  = user.transactions || [];
-  const positions = {};
   let totalSpent = 0, totalReceived = 0;
   for (const tx of txs) {
     if (tx.type !== 'fill') continue;
-    const k = tx.contractName;
-    if (!positions[k]) positions[k] = { shares: 0, spent: 0, received: 0 };
-    if (tx.side === 'buy')  { positions[k].shares += tx.shares; positions[k].spent  += tx.spent;    totalSpent    += tx.spent; }
-    if (tx.side === 'sell') { positions[k].shares -= tx.shares; positions[k].received += tx.received; totalReceived += tx.received; }
+    if (tx.side === 'buy')  totalSpent    += tx.spent    || 0;
+    if (tx.side === 'sell') totalReceived += tx.received || 0;
+  }
+
+  // Current positions: live shares from ledger, unresolved games only
+  const positions = {};
+  for (const [key, shares] of Object.entries(user.shares || {})) {
+    if (shares <= 0) continue;
+    const [gameId, ck] = key.split(':');
+    const game = db.games[gameId];
+    if (!game || game.resolved) continue;
+    const c = game.contracts[ck];
+    const label = `${c?.name || ck} (${gameId.slice(0,8)})`;
+    positions[label] = { shares, gameId, ck, contractName: c?.name };
   }
   const orders = [];
   for (const [gameId, game] of Object.entries(db.games)) {
