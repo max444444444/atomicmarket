@@ -29,6 +29,7 @@ function getUser(u) {
   if (!db.users[u]) db.users[u] = { balance: 0, transactions: [], totalDeposited: 0 };
   if (!db.users[u].transactions) db.users[u].transactions = [];
   if (db.users[u].totalDeposited == null) db.users[u].totalDeposited = 0;
+  if (db.users[u].balance == null) db.users[u].balance = 0;
   return db.users[u];
 }
 
@@ -134,14 +135,45 @@ app.get('/api/balance/:username', auth, (req, res) => {
 
 app.get('/api/profile', auth, (req, res) => {
   const user = getUser(req.username);
+  const txs = user.transactions || [];
+
+  // Compute trading P&L and positions from fill history
+  const positions = {};
+  let totalSpent = 0, totalReceived = 0;
+  for (const tx of txs) {
+    if (tx.type !== 'fill') continue;
+    const k = tx.contractName;
+    if (!positions[k]) positions[k] = { shares: 0, spent: 0, received: 0 };
+    if (tx.side === 'buy')  { positions[k].shares += tx.shares; positions[k].spent += tx.spent; totalSpent += tx.spent; }
+    if (tx.side === 'sell') { positions[k].shares -= tx.shares; positions[k].received += tx.received; totalReceived += tx.received; }
+  }
+
   res.json({
     username: req.username,
     balance: user.balance,
     totalDeposited: user.totalDeposited || 0,
     pnl: user.balance - (user.totalDeposited || 0),
-    transactions: (user.transactions || []).slice(0, 100),
+    totalSpent,
+    totalReceived,
+    tradingPnl: totalReceived - totalSpent,
+    positions,
+    transactions: txs.slice(0, 100),
     isAdmin: isAdmin(req.username),
   });
+});
+
+app.get('/api/myorders', auth, (req, res) => {
+  const username = req.username;
+  const orders = [];
+  for (const [gameId, game] of Object.entries(db.games)) {
+    for (const [ck, c] of Object.entries(game.contracts)) {
+      for (const b of c.bids.filter(b => b.user === username))
+        orders.push({ gameId, contract: ck, contractName: c.name, side: 'buy',  price: b.price, size: b.size, id: b.id, locked: b.price * b.size });
+      for (const a of c.asks.filter(a => a.user === username))
+        orders.push({ gameId, contract: ck, contractName: c.name, side: 'sell', price: a.price, size: a.size, id: a.id, locked: 0 });
+    }
+  }
+  res.json({ orders });
 });
 
 app.post('/api/game/init', auth, (req, res) => {

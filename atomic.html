@@ -980,11 +980,15 @@ async function openProfile() {
   history.pushState({ profile: true }, '', '/profile');
   go('profile');
   document.getElementById('profile-content').innerHTML = '<div style="text-align:center;padding:48px;color:var(--txt2)">Loading…</div>';
-  const [r1, r2] = await Promise.all([api('/api/profile'), api('/api/myorders')]);
-  if (!r1.ok) { document.getElementById('profile-content').innerHTML = '<div class="empty-state" style="padding:24px">Failed to load profile.</div>'; return; }
-  const data   = await r1.json();
-  const orders = r2.ok ? (await r2.json()).orders : [];
-  renderProfile(data, orders);
+  try {
+    const [r1, r2] = await Promise.all([api('/api/profile'), api('/api/myorders')]);
+    if (!r1.ok) { document.getElementById('profile-content').innerHTML = '<div class="empty-state" style="padding:24px">Failed to load profile.</div>'; return; }
+    const data   = await r1.json();
+    const orders = r2.ok ? (await r2.json()).orders : [];
+    renderProfile(data, orders);
+  } catch(e) {
+    document.getElementById('profile-content').innerHTML = `<div class="empty-state" style="padding:24px">Error: ${e.message}</div>`;
+  }
 }
 
 function closeProfile() {
@@ -993,10 +997,16 @@ function closeProfile() {
 }
 
 function renderProfile(data, orders) {
-  const pnlColor  = data.pnl >= 0 ? 'var(--green)' : 'var(--red)';
-  const pnlSign   = data.pnl > 0 ? '+' : '';
-  const tpnlColor = data.tradingPnl >= 0 ? 'var(--green)' : 'var(--red)';
-  const tpnlSign  = data.tradingPnl > 0 ? '+' : '';
+  const balance      = data.balance      ?? 0;
+  const deposited    = data.totalDeposited ?? 0;
+  const pnl          = data.pnl          ?? 0;
+  const tradingPnl   = data.tradingPnl   ?? 0;
+  const totalSpent   = data.totalSpent   ?? 0;
+  const totalReceived= data.totalReceived?? 0;
+  const pnlColor  = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+  const pnlSign   = pnl > 0 ? '+' : '';
+  const tpnlColor = tradingPnl >= 0 ? 'var(--green)' : 'var(--red)';
+  const tpnlSign  = tradingPnl > 0 ? '+' : '';
 
   // Compute extra stats from transactions
   const fills = data.transactions.filter(t => t.type === 'fill');
@@ -1013,8 +1023,8 @@ function renderProfile(data, orders) {
   const topContract = Object.entries(contractVol).sort((a, b) => b[1] - a[1])[0];
 
   // Avg buy / sell price
-  const avgBuy  = buys.length  ? Math.round(data.totalSpent    / totalSharesBought) : null;
-  const avgSell = sells.length ? Math.round(data.totalReceived / totalSharesSold)   : null;
+  const avgBuy  = buys.length  && totalSharesBought  ? Math.round(totalSpent    / totalSharesBought) : null;
+  const avgSell = sells.length && totalSharesSold    ? Math.round(totalReceived / totalSharesSold)   : null;
 
   const initials = currentUser ? currentUser.substring(0, 2).toUpperCase() : '?';
 
@@ -1028,10 +1038,10 @@ function renderProfile(data, orders) {
     </div>
 
     <div class="stat-grid">
-      <div class="stat-box"><div class="stat-val">${data.balance.toLocaleString()}</div><div class="stat-lbl">Balance</div></div>
-      <div class="stat-box"><div class="stat-val">${data.totalDeposited.toLocaleString()}</div><div class="stat-lbl">Deposited</div></div>
-      <div class="stat-box"><div class="stat-val" style="color:${pnlColor}">${pnlSign}${data.pnl.toLocaleString()}</div><div class="stat-lbl">Net P&amp;L</div></div>
-      <div class="stat-box"><div class="stat-val" style="color:${tpnlColor}">${tpnlSign}${data.tradingPnl.toLocaleString()}</div><div class="stat-lbl">Trading P&amp;L</div></div>
+      <div class="stat-box"><div class="stat-val">${balance.toLocaleString()}</div><div class="stat-lbl">Balance</div></div>
+      <div class="stat-box"><div class="stat-val">${deposited.toLocaleString()}</div><div class="stat-lbl">Deposited</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:${pnlColor}">${pnlSign}${pnl.toLocaleString()}</div><div class="stat-lbl">Net P&amp;L</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:${tpnlColor}">${tpnlSign}${tradingPnl.toLocaleString()}</div><div class="stat-lbl">Trading P&amp;L</div></div>
     </div>
 
     <div class="stat-grid-sm">
@@ -1056,7 +1066,7 @@ function renderProfile(data, orders) {
         <div class="stat-lbl">Most traded · ${topContract[1]} shares</div>
       </div>
       <div class="stat-box">
-        <div class="stat-val-sm">${data.totalSpent.toLocaleString()}</div>
+        <div class="stat-val-sm">${totalSpent.toLocaleString()}</div>
         <div class="stat-lbl">Total spent on buys</div>
       </div>
     </div>`;
