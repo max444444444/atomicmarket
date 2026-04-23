@@ -319,11 +319,22 @@ app.post('/api/cancel', auth, (req, res) => {
   res.json({ ok: true, balance: user.balance });
 });
 
-app.post('/api/admin/sync', auth, (req, res) => {
+app.post('/api/admin/sync', auth, async (req, res) => {
   if (!isAdmin(req.username)) return res.status(403).json({ error: 'Forbidden' });
-  if (!REDIS_URL) return res.status(400).json({ error: 'Redis not configured' });
+  if (!REDIS_URL) return res.status(400).json({
+    error: 'Redis not configured',
+    hint: 'UPSTASH_REDIS_REST_URL env var is missing on this server instance',
+    envKeys: Object.keys(process.env).filter(k => k.includes('REDIS') || k.includes('UPSTASH')),
+  });
   persist();
-  res.json({ ok: true, users: Object.keys(db.users).length });
+  // Verify the write actually worked
+  try {
+    const check = await redisLoad();
+    const ok = check && Object.keys(check.users || {}).length > 0;
+    res.json({ ok: true, users: Object.keys(db.users).length, redisVerified: ok });
+  } catch(e) {
+    res.json({ ok: true, users: Object.keys(db.users).length, redisVerified: false, err: e.message });
+  }
 });
 
 app.post('/api/admin/pawns', auth, (req, res) => {
