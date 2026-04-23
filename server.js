@@ -7,7 +7,7 @@ const fs      = require('fs');
 const path    = require('path');
 
 const PORT        = process.env.PORT || 3000;
-const ADMINS      = new Set(['ecc_official', 'scenry1', ...(process.env.ADMIN_USERS || '').split(',').filter(Boolean)]);
+const ADMINS      = new Set(['ecc_official', 'scenry1', 'seaside_tiramisu', ...(process.env.ADMIN_USERS || '').split(',').filter(Boolean)]);
 const STATE_FILE  = path.join(__dirname, 'state.json');
 const REDIS_URL   = process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
