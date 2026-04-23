@@ -275,13 +275,14 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
 
   <div id="admin-panel" style="display:none">
     <div class="admin-panel">
-      <div class="admin-panel-title">&#9733; Admin — manage pawns</div>
+      <div class="admin-panel-title">&#9733; Admin</div>
       <div class="admin-row">
         <input type="text" id="admin-target" placeholder="username" />
         <input type="number" id="admin-amount" placeholder="amount" min="1" style="max-width:90px" />
-        <button class="admin-btn" onclick="adminPawns(1)">Add</button>
-        <button class="admin-btn danger" onclick="adminPawns(-1)">Remove</button>
-        <button class="admin-btn" onclick="adminSync()" style="background:var(--accent);margin-left:4px" title="Force-save all data to Redis now">Sync DB</button>
+        <button class="admin-btn" onclick="adminPawns(1)">Deposit</button>
+        <button class="admin-btn danger" onclick="adminPawns(-1)">Withdraw</button>
+        <button class="admin-btn" onclick="adminViewUser()" style="background:var(--accent)">View Profile</button>
+        <button class="admin-btn" onclick="adminSync()" style="background:#6d28d9;margin-left:4px" title="Force-save all data to Redis now">Sync DB</button>
       </div>
       <div class="status-msg" id="admin-msg" style="margin-top:8px;margin-bottom:0"></div>
     </div>
@@ -998,19 +999,33 @@ function playDing() {
 }
 
 // ── Profile modal ─────────────────────────────────────────────────────────
-async function openProfile() {
+async function openProfile(adminTarget) {
   history.pushState({ profile: true }, '', '/profile');
   go('profile');
   document.getElementById('profile-content').innerHTML = '<div style="text-align:center;padding:48px;color:var(--txt2)">Loading…</div>';
   try {
-    const [r1, r2] = await Promise.all([api('/api/profile'), api('/api/myorders')]);
-    if (!r1.ok) { document.getElementById('profile-content').innerHTML = '<div class="empty-state" style="padding:24px">Failed to load profile.</div>'; return; }
-    const data   = await r1.json();
-    const orders = r2.ok ? (await r2.json()).orders : [];
-    renderProfile(data, orders);
+    let data, orders;
+    if (adminTarget) {
+      const r = await api(`/api/admin/user/${encodeURIComponent(adminTarget)}`);
+      if (!r.ok) { const d = await r.json(); document.getElementById('profile-content').innerHTML = `<div class="empty-state" style="padding:24px">${d.error || 'User not found'}</div>`; return; }
+      data = await r.json();
+      orders = data.orders || [];
+    } else {
+      const [r1, r2] = await Promise.all([api('/api/profile'), api('/api/myorders')]);
+      if (!r1.ok) { document.getElementById('profile-content').innerHTML = '<div class="empty-state" style="padding:24px">Failed to load profile.</div>'; return; }
+      data   = await r1.json();
+      orders = r2.ok ? (await r2.json()).orders : [];
+    }
+    renderProfile(data, orders, !!adminTarget);
   } catch(e) {
     document.getElementById('profile-content').innerHTML = `<div class="empty-state" style="padding:24px">Error: ${e.message}</div>`;
   }
+}
+
+async function adminViewUser() {
+  const target = document.getElementById('admin-target').value.trim().toLowerCase();
+  if (!target) { showMsg('admin-msg', 'Enter a username first.', 'err'); return; }
+  openProfile(target);
 }
 
 function closeProfile() {
@@ -1018,7 +1033,7 @@ function closeProfile() {
   go('app');
 }
 
-function renderProfile(data, orders) {
+function renderProfile(data, orders, isAdminView) {
   const balance      = data.balance      ?? 0;
   const deposited    = data.totalDeposited ?? 0;
   const pnl          = data.pnl          ?? 0;
@@ -1054,7 +1069,7 @@ function renderProfile(data, orders) {
     <div class="profile-hero">
       <div class="profile-avatar-lg">${initials}</div>
       <div class="profile-hero-info">
-        <div class="profile-hero-name">${data.username}</div>
+        <div class="profile-hero-name">${data.username}${isAdminView ? ' <span style="font-size:12px;color:var(--accent);font-weight:500">(admin view)</span>' : ''}</div>
         <div class="profile-hero-sub">${fills.length} fills · ${totalVolume} shares traded${data.isAdmin ? ' · ⭐ Admin' : ''}</div>
       </div>
     </div>
@@ -1141,8 +1156,9 @@ function renderProfile(data, orders) {
     html += data.transactions.map(tx => {
       const time = new Date(tx.time).toLocaleString();
       let desc = '', amt = '', color = 'var(--txt1)';
-      if (tx.type === 'admin_add')    { desc = `Admin added pawns (by ${tx.by})`; amt = `+${tx.amount}`; color = 'var(--green)'; }
-      else if (tx.type === 'admin_remove') { desc = `Admin removed pawns (by ${tx.by})`; amt = `-${tx.amount}`; color = 'var(--red)'; }
+      if (tx.type === 'admin_add')    { desc = `Deposit (by ${tx.by})`; amt = `+${tx.amount}`; color = 'var(--green)'; }
+      else if (tx.type === 'withdrawal') { desc = `Withdrawal (by ${tx.by})`; amt = `-${tx.amount}`; color = 'var(--txt2)'; }
+      else if (tx.type === 'admin_remove') { desc = `Withdrawal (by ${tx.by})`; amt = `-${tx.amount}`; color = 'var(--txt2)'; }
       else if (tx.type === 'fill' && tx.side === 'buy')  { desc = `Bought ${tx.shares}× ${tx.contractName} @ ${tx.price}¢`; amt = `-${tx.spent}`; color = 'var(--red)'; }
       else if (tx.type === 'fill' && tx.side === 'sell') { desc = `Sold ${tx.shares}× ${tx.contractName} @ ${tx.price}¢`;   amt = `+${tx.received}`; color = 'var(--green)'; }
       else if (tx.type === 'cancel' && tx.side === 'buy')  { desc = `Cancelled buy ${tx.shares}× ${tx.contractName} @ ${tx.price}¢`; amt = `+${tx.refunded} refund`; color = 'var(--txt2)'; }
