@@ -328,6 +328,7 @@ app.post('/api/admin/sync', auth, async (req, res) => {
     error: 'Redis not configured',
     hint: 'UPSTASH_REDIS_REST_URL env var is missing on this server instance',
     envKeys: Object.keys(process.env).filter(k => k.includes('REDIS') || k.includes('UPSTASH')),
+    urlLikeKeys: Object.keys(process.env).filter(k => k.includes('URL') || k.includes('TOKEN') || k.includes('KV')),
     allEnvCount: Object.keys(process.env).length,
   });
   // Write using live credentials

@@ -634,7 +634,7 @@ async function adminSync() {
   if (!r.ok) {
     const detail = d.envKeys?.length
       ? ` (found: ${d.envKeys.join(', ')})`
-      : ` (no UPSTASH/REDIS vars found, ${d.allEnvCount ?? '?'} total env vars on server)`;
+      : ` (none found — URL/TOKEN-like keys: ${(d.urlLikeKeys||[]).join(', ') || 'none'})`;
     showMsg('admin-msg', (d.error || 'Sync failed') + detail, 'err');
     return;
   }
