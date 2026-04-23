@@ -6,23 +6,48 @@ const crypto  = require('crypto');
 const fs      = require('fs');
 const path    = require('path');
 
-const PORT       = process.env.PORT || 3000;
-const ADMINS     = new Set(['ecc_official', 'scenry1', ...(process.env.ADMIN_USERS || '').split(',').filter(Boolean)]);
-const STATE_FILE = path.join(__dirname, 'state.json');
+const PORT        = process.env.PORT || 3000;
+const ADMINS      = new Set(['ecc_official', 'scenry1', ...(process.env.ADMIN_USERS || '').split(',').filter(Boolean)]);
+const STATE_FILE  = path.join(__dirname, 'state.json');
+const REDIS_URL   = process.env.UPSTASH_REDIS_REST_URL;
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
 function isAdmin(u) { return ADMINS.has(u); }
+
+// ── Redis helpers (Upstash REST API) ──────────────────────────────────────
+async function redisLoad() {
+  if (!REDIS_URL) return null;
+  try {
+    const r = await fetch(REDIS_URL, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${REDIS_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(['GET', 'atomicmarket_state']),
+    });
+    const j = await r.json();
+    return j.result ? JSON.parse(j.result) : null;
+  } catch(_) { return null; }
+}
+
+function redisSave(data) {
+  if (!REDIS_URL) return;
+  fetch(REDIS_URL, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${REDIS_TOKEN}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(['SET', 'atomicmarket_state', JSON.stringify(data)]),
+  }).catch(() => {});
+}
 
 // ── Persistent state ──────────────────────────────────────────────────────
 let db = { users: {}, games: {}, sessions: {} };
 try { db = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')); } catch (_) {}
 if (!db.sessions) db.sessions = {};
 
-// Restore sessions from disk so logins survive server restarts
 const sessions = new Map(Object.entries(db.sessions));
 
 function persist() {
   db.sessions = Object.fromEntries(sessions);
-  fs.writeFileSync(STATE_FILE, JSON.stringify(db));
+  try { fs.writeFileSync(STATE_FILE, JSON.stringify(db)); } catch(_) {}
+  redisSave(db);
 }
 
 function getUser(u) {
@@ -309,4 +334,23 @@ app.post('/api/admin/pawns', auth, (req, res) => {
   res.json({ ok: true, balance: user.balance });
 });
 
-server.listen(PORT, () => console.log(`AtomicMarket running on :${PORT}`));
+async function init() {
+  // On each deploy the local file is gone, so prefer Redis as source of truth
+  const redisState = await redisLoad();
+  if (redisState) {
+    db = redisState;
+    if (!db.sessions) db.sessions = {};
+    if (!db.users)    db.users    = {};
+    if (!db.games)    db.games    = {};
+    // Repopulate sessions map from Redis data
+    sessions.clear();
+    for (const [k, v] of Object.entries(db.sessions)) sessions.set(k, v);
+    // Write to local file as a warm cache
+    try { fs.writeFileSync(STATE_FILE, JSON.stringify(db)); } catch(_) {}
+    console.log('State loaded from Redis');
+  } else {
+    console.log('No Redis state found, using local file');
+  }
+  server.listen(PORT, () => console.log(`AtomicMarket running on :${PORT}`));
+}
+init();
