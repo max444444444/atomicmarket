@@ -52,10 +52,25 @@ function persist() {
 
 function getUser(u) {
   if (!db.users[u]) db.users[u] = { balance: 0, transactions: [], totalDeposited: 0 };
-  if (!db.users[u].transactions) db.users[u].transactions = [];
+  if (!db.users[u].transactions)  db.users[u].transactions = [];
   if (db.users[u].totalDeposited == null) db.users[u].totalDeposited = 0;
   if (db.users[u].balance == null) db.users[u].balance = 0;
+  if (!db.users[u].shares) db.users[u].shares = {};
   return db.users[u];
+}
+
+// shares ledger: user.shares["gameId:ck"] = net shares held
+function skey(gameId, ck) { return `${gameId}:${ck}`; }
+function addShares(username, gameId, ck, delta) {
+  const u = getUser(username);
+  const k = skey(gameId, ck);
+  u.shares[k] = (u.shares[k] || 0) + delta;
+}
+function availableShares(username, gameId, ck, openAsks) {
+  const u = db.users[username];
+  const held = (u?.shares?.[skey(gameId, ck)]) || 0;
+  const committed = openAsks.filter(a => a.user === username).reduce((s, a) => s + a.size, 0);
+  return held - committed;
 }
 
 function logTx(username, tx) {
@@ -188,7 +203,7 @@ app.post('/api/game/init', auth, (req, res) => {
 });
 
 app.post('/api/order', auth, (req, res) => {
-  const { gameId, side, contract: ck, price, shares } = req.body;
+  const { gameId, side, contract: ck, price, shares, intent } = req.body;
   const username = req.username;
 
   if (!['buy', 'sell'].includes(side) || !['white', 'draw', 'black'].includes(ck) ||
@@ -199,7 +214,6 @@ app.post('/api/order', auth, (req, res) => {
   const game = db.games[gameId];
   if (!game) return res.status(404).json({ error: 'Game not found' });
 
-  // Forbid players from betting on their own game
   const gamePlayers = Object.values(game.players || {}).map(p => p.toLowerCase());
   if (gamePlayers.includes(username)) {
     return res.status(403).json({ error: 'You cannot bet on your own game' });
@@ -224,8 +238,10 @@ app.post('/api/order', auth, (req, res) => {
       if (f > 0) {
         const seller = getUser(ask.user);
         seller.balance += ask.price * f;
+        addShares(username,  gameId, ck, +f);
+        addShares(ask.user,  gameId, ck, -f);
         game.trades.unshift({ contract: c.name, price: ask.price, size: f, time: Date.now(), dir: 'up' });
-        logTx(username, { type: 'fill', side: 'buy', contract: ck, contractName: c.name, price: ask.price, shares: f, spent: ask.price * f });
+        logTx(username, { type: 'fill', side: 'buy',  contract: ck, contractName: c.name, price: ask.price, shares: f, spent: ask.price * f });
         logTx(ask.user, { type: 'fill', side: 'sell', contract: ck, contractName: c.name, price: ask.price, shares: f, received: ask.price * f });
       }
     }
@@ -233,6 +249,14 @@ app.post('/api/order', auth, (req, res) => {
     if (rem > 0) c.bids.push({ id: crypto.randomBytes(8).toString('hex'), price, size: rem, user: username });
 
   } else {
+    // Only enforce share ownership for explicit "Sell YES" — not for "Buy NO" (opening a short)
+    if (intent === 'sell') {
+      const avail = availableShares(username, gameId, ck, c.asks);
+      if (shares > avail) {
+        return res.status(400).json({ error: `You only have ${Math.max(0, avail)} share${avail === 1 ? '' : 's'} to sell` });
+      }
+    }
+
     const matchable = c.bids.filter(b => b.price >= price).sort((a, b) => b.price - a.price);
     let rem = shares;
     for (const bid of matchable) {
@@ -241,6 +265,8 @@ app.post('/api/order', auth, (req, res) => {
       user.balance += bid.price * f;
       rem -= f; bid.size -= f; filled += f;
       if (f > 0) {
+        addShares(username, gameId, ck, -f);
+        addShares(bid.user, gameId, ck, +f);
         game.trades.unshift({ contract: c.name, price: bid.price, size: f, time: Date.now(), dir: 'dn' });
         logTx(username, { type: 'fill', side: 'sell', contract: ck, contractName: c.name, price: bid.price, shares: f, received: bid.price * f });
         logTx(bid.user,  { type: 'fill', side: 'buy',  contract: ck, contractName: c.name, price: bid.price, shares: f, spent: bid.price * f });

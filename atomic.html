@@ -840,7 +840,7 @@ async function placeOrder() {
   if (price < 1 || price > 99) { showToast('Price must be 1–99'); return; }
   if (shares < 1)              { showToast('Enter at least 1 share'); return; }
 
-  const r = await api('/api/order', { gameId: currentGameId, side: actualSide, contract: k, price, shares });
+  const r = await api('/api/order', { gameId: currentGameId, side: actualSide, contract: k, price, shares, intent: side });
   const d = await r.json();
   if (!r.ok) { showToast(d.error || 'Order failed'); return; }
 
