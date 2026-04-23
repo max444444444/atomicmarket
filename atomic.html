@@ -654,6 +654,9 @@ async function fetchGame() {
     if (!res.ok) { showMsg('game-status', 'Lichess error (' + res.status + ').', 'err'); return; }
     const game = await res.json();
     if (!isAtomic(game)) { showMsg('game-status', `"${u}" is playing ${detectVariant(game)}, not atomic.`, 'err'); return; }
+    if (game.status && !['started', 'created'].includes(game.status)) {
+      showMsg('game-status', `"${u}" has no active game right now.`, 'err'); return;
+    }
     clearMsg('game-status');
     loadGame(game);
   } catch (e) { showMsg('game-status', 'Network error: ' + e.message, 'err'); }
@@ -721,7 +724,12 @@ async function loadGame(game) {
   document.getElementById('game-section').style.display = 'block';
   selContract('white');
   renderAll();
-  pollInterval = setInterval(() => pollGame(game.id), 5000);
+  // If the game already ended (race between fetch and load), settle immediately
+  if (game.status && !['started', 'created'].includes(game.status)) {
+    settleGame(game);
+  } else {
+    pollInterval = setInterval(() => pollGame(game.id), 5000);
+  }
 }
 
 async function pollGame(id) {
