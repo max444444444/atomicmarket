@@ -321,19 +321,34 @@ app.post('/api/cancel', auth, (req, res) => {
 
 app.post('/api/admin/sync', auth, async (req, res) => {
   if (!isAdmin(req.username)) return res.status(403).json({ error: 'Forbidden' });
-  if (!REDIS_URL) return res.status(400).json({
+  // Re-read live in case module-load constants differ from current env
+  const liveUrl   = process.env.UPSTASH_REDIS_REST_URL;
+  const liveToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!liveUrl) return res.status(400).json({
     error: 'Redis not configured',
     hint: 'UPSTASH_REDIS_REST_URL env var is missing on this server instance',
     envKeys: Object.keys(process.env).filter(k => k.includes('REDIS') || k.includes('UPSTASH')),
+    allEnvCount: Object.keys(process.env).length,
   });
-  persist();
-  // Verify the write actually worked
+  // Write using live credentials
   try {
-    const check = await redisLoad();
-    const ok = check && Object.keys(check.users || {}).length > 0;
-    res.json({ ok: true, users: Object.keys(db.users).length, redisVerified: ok });
+    db.sessions = Object.fromEntries(sessions);
+    try { fs.writeFileSync(STATE_FILE, JSON.stringify(db)); } catch(_) {}
+    await fetch(liveUrl, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${liveToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(['SET', 'atomicmarket_state', JSON.stringify(db)]),
+    });
+    // Verify round-trip
+    const check = await fetch(liveUrl, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${liveToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(['GET', 'atomicmarket_state']),
+    });
+    const j = await check.json();
+    res.json({ ok: true, users: Object.keys(db.users).length, redisVerified: !!j.result });
   } catch(e) {
-    res.json({ ok: true, users: Object.keys(db.users).length, redisVerified: false, err: e.message });
+    res.status(500).json({ error: 'Redis write failed: ' + e.message });
   }
 });
 

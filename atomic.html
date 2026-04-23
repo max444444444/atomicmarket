@@ -632,7 +632,9 @@ async function adminSync() {
   const r = await api('/api/admin/sync', {});
   const d = await r.json();
   if (!r.ok) {
-    const detail = d.envKeys?.length ? ` (found: ${d.envKeys.join(', ')})` : ' (no UPSTASH/REDIS vars found)';
+    const detail = d.envKeys?.length
+      ? ` (found: ${d.envKeys.join(', ')})`
+      : ` (no UPSTASH/REDIS vars found, ${d.allEnvCount ?? '?'} total env vars on server)`;
     showMsg('admin-msg', (d.error || 'Sync failed') + detail, 'err');
     return;
   }
