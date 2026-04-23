@@ -796,10 +796,10 @@ function selContract(k) {
 function onContractChange() { selContract(document.getElementById('order-contract').value); }
 
 function deriveSide() {
-  if (buySell === 'buy' && yesNo === 'yes')  return 'buy';
-  if (buySell === 'buy' && yesNo === 'no')   return 'buyno';
+  if (buySell === 'buy'  && yesNo === 'yes') return 'buy';
+  if (buySell === 'buy'  && yesNo === 'no')  return 'buyno';   // send as sell YES at (100-p)
   if (buySell === 'sell' && yesNo === 'yes') return 'sell';
-  return 'sell'; // sell no = buy yes from counterparty pov, simplify to sell
+  return 'sellno'; // sell NO at p = buy YES at (100-p)
 }
 
 function setBuySell(bs) {
@@ -834,7 +834,8 @@ async function placeOrder() {
   const k      = document.getElementById('order-contract').value;
 
   let actualSide = side;
-  if (side === 'buyno') { actualSide = 'sell'; price = 100 - price; }
+  if (side === 'buyno')  { actualSide = 'sell'; price = 100 - price; }
+  if (side === 'sellno') { actualSide = 'buy';  price = 100 - price; }
 
   if (price < 1 || price > 99) { showToast('Price must be 1–99'); return; }
   if (shares < 1)              { showToast('Enter at least 1 share'); return; }
@@ -868,7 +869,10 @@ function updateSummary() {
   const el = document.getElementById('order-summary');
   if (side === 'buyno') {
     const cost = price * shares;
-    el.innerHTML = `<strong>Buy ${shares}×</strong> NO on "${contracts[k].name}" at <strong>${price}¢</strong> &nbsp;·&nbsp; Cost <strong>${cost} pawns</strong> &nbsp;·&nbsp; Max profit <strong>+${payout - cost}</strong>`;
+    el.innerHTML = `<strong>Buy ${shares}×</strong> NO on "${contracts[k].name}" at <strong>${price}¢</strong> &nbsp;·&nbsp; Receive <strong>${(100-price)*shares} pawns</strong> &nbsp;·&nbsp; Max liability <strong>${cost}</strong>`;
+  } else if (side === 'sellno') {
+    const yesCost = (100 - price) * shares;
+    el.innerHTML = `<strong>Sell ${shares}×</strong> NO on "${contracts[k].name}" at <strong>${price}¢</strong> &nbsp;·&nbsp; Costs <strong>${yesCost} pawns</strong> &nbsp;·&nbsp; Max profit <strong>+${price * shares}</strong>`;
   } else if (side === 'buy') {
     const cost = price * shares;
     el.innerHTML = `<strong>Buy ${shares}×</strong> "${contracts[k].name}" at <strong>${price}¢</strong> &nbsp;·&nbsp; Cost <strong>${cost} pawns</strong> &nbsp;·&nbsp; Max profit <strong>+${payout - cost}</strong>`;
