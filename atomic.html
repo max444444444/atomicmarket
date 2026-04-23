@@ -391,20 +391,22 @@ body{font-family:var(--font-sans);color:var(--txt1);font-size:14px;line-height:1
 
 </div>
 
-<div id="screen-profile" class="screen page" style="padding-top:0">
-  <div class="topbar">
-    <div class="topbar-left">
-      <div class="topbar-mark">&#9889;</div>
-      <div class="topbar-title">AtomicMarket</div>
-    </div>
-    <div class="topbar-right">
-      <button class="back-btn" onclick="closeProfile()">&#8592; Back to markets</button>
-    </div>
-  </div>
-  <div id="profile-content"><div style="text-align:center;padding:48px;color:var(--txt2)">Loading…</div></div>
+<div class="toast" id="toast"></div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div id="screen-profile" class="screen" style="padding:0">
+  <div style="max-width:920px;margin:0 auto;padding:0 1.25rem 2rem">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-mark">&#9889;</div>
+        <div class="topbar-title">AtomicMarket</div>
+      </div>
+      <div class="topbar-right">
+        <button class="back-btn" onclick="closeProfile()">&#8592; Back to markets</button>
+      </div>
+    </div>
+    <div id="profile-content"><div style="text-align:center;padding:48px;color:var(--txt2)">Loading…</div></div>
+  </div>
 </div>
 
 <script>
@@ -1132,6 +1134,12 @@ async function cancelOrderFromProfile(gameId, contractKey, orderId, side) {
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────
+window.addEventListener('popstate', () => {
+  if (!currentUser) return;
+  if (location.pathname === '/profile') openProfile();
+  else go('app');
+});
+
 wsConnect();
 syncSide();
 updateSummary();
