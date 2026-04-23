@@ -374,6 +374,16 @@ function buildProfile(username) {
   };
 }
 
+app.post('/api/admin/reset', auth, (req, res) => {
+  if (!isAdmin(req.username)) return res.status(403).json({ error: 'Forbidden' });
+  db.users = {};
+  db.games = {};
+  sessions.clear();
+  db.sessions = {};
+  persist();
+  res.json({ ok: true });
+});
+
 app.get('/api/admin/user/:target', auth, (req, res) => {
   if (!isAdmin(req.username)) return res.status(403).json({ error: 'Forbidden' });
   const target = req.params.target.toLowerCase();
