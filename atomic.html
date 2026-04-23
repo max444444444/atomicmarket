@@ -1264,6 +1264,7 @@ function renderProfile(data, orders, isAdminView) {
       else if (tx.type === 'cancel' && tx.side === 'buy')  { desc = `Cancelled buy ${tx.shares}× ${tx.contractName} @ ${tx.price}¢`; amt = `+${tx.refunded} refund`; color = 'var(--txt2)'; }
       else if (tx.type === 'cancel' && tx.side === 'sell') { desc = `Cancelled sell ${tx.shares}× ${tx.contractName} @ ${tx.price}¢`; }
       else if (tx.type === 'settlement') { desc = `Market resolved — ${tx.contractName} won · ${tx.shares} shares`; amt = `+${tx.payout}`; color = 'var(--green)'; }
+      else if (tx.type === 'settlement_loss') { desc = `Market resolved against short · ${tx.contractName} · ${tx.shares} shares`; amt = `-${tx.deducted}`; color = 'var(--red)'; }
       return `<div class="tx-row"><div><div class="tx-desc">${desc}</div><div class="tx-time">${time}</div></div><div class="tx-amt" style="color:${color}">${amt}</div></div>`;
     }).join('');
   }

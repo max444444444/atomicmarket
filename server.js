@@ -192,9 +192,10 @@ app.post('/api/game/settle', auth, (req, res) => {
 
   game.resolved = { winner, at: Date.now() };
 
-  // Pay 100 pawns per share to holders of the winning contract
+  // Settle the winning contract: pay longs 100/share, collect 100/share from shorts
   const winningContract = game.contracts[winner];
   const payouts = {};
+  const losses  = {};
   for (const [username, user] of Object.entries(db.users)) {
     const shares = user.shares?.[skey(gameId, winner)] || 0;
     if (shares > 0) {
@@ -202,6 +203,13 @@ app.post('/api/game/settle', auth, (req, res) => {
       user.balance += payout;
       payouts[username] = payout;
       logTx(username, { type: 'settlement', gameId, contract: winner, contractName: winningContract.name, shares, payout });
+    } else if (shares < 0) {
+      // Short sellers received cash at fill; they owe 100/share to cover longs
+      const owed     = Math.abs(shares) * 100;
+      const deducted = Math.min(owed, user.balance);
+      user.balance  -= deducted;
+      losses[username] = deducted;
+      logTx(username, { type: 'settlement_loss', gameId, contract: winner, contractName: winningContract.name, shares: Math.abs(shares), owed, deducted });
     }
   }
 
@@ -215,13 +223,13 @@ app.post('/api/game/settle', auth, (req, res) => {
   persist();
   broadcast(gameId);
 
-  // Notify balance changes over WS
-  for (const [uname, payout] of Object.entries(payouts)) {
+  // Notify balance changes over WS for all affected users
+  for (const uname of [...Object.keys(payouts), ...Object.keys(losses)]) {
     const msg = JSON.stringify({ type: 'balance', username: uname, balance: db.users[uname].balance });
     wss.clients.forEach(ws => { if (ws.readyState === 1) ws.send(msg); });
   }
 
-  res.json({ ok: true, winner, winnerName: winningContract.name, payouts });
+  res.json({ ok: true, winner, winnerName: winningContract.name, payouts, losses });
 });
 
 app.post('/api/game/init', auth, (req, res) => {
@@ -292,11 +300,17 @@ app.post('/api/order', auth, (req, res) => {
     if (rem > 0) c.bids.push({ id: crypto.randomBytes(8).toString('hex'), price, size: rem, user: username });
 
   } else {
-    // Only enforce share ownership for explicit "Sell YES" — not for "Buy NO" (opening a short)
+    // Enforce share ownership for Sell YES; enforce collateral for Buy NO (opening a short)
     if (intent === 'sell') {
       const avail = availableShares(username, gameId, ck, c.asks);
       if (shares > avail) {
         return res.status(400).json({ error: `You only have ${Math.max(0, avail)} share${avail === 1 ? '' : 's'} to sell` });
+      }
+    } else {
+      // Buy NO: user will owe 100/share if this contract wins — require (100-price)*shares as collateral
+      const collateral = (100 - price) * shares;
+      if (collateral > user.balance) {
+        return res.status(400).json({ error: `Insufficient balance: need ${collateral} pawns as collateral` });
       }
     }
 
