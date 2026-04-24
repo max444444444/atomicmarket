@@ -747,9 +747,9 @@ async function loadGame(game) {
   document.getElementById('elo-white').textContent    = weloText;
   document.getElementById('elo-black').textContent    = beloText;
   document.getElementById('game-link').href           = 'https://lichess.org/' + game.id;
-  const moves = game.moves ? game.moves.trim().split(' ') : [];
+  const moves = game.moves ? game.moves.trim().split(' ').filter(Boolean) : [];
   moveNum = moves.length;
-  document.getElementById('move-tag').textContent = 'move ' + Math.ceil(moveNum / 2);
+  document.getElementById('move-tag').textContent = moveNum > 0 ? 'move ' + Math.ceil(moveNum / 2) : 'move —';
 
   const welo = wp?.rating || 1500, belo = bp?.rating || 1500, diff = welo - belo;
   const wp2 = Math.round(50 + Math.min(30, Math.max(-30, diff / 20)));
@@ -788,7 +788,7 @@ async function loadGame(game) {
   if (game.status && !['started', 'created'].includes(game.status)) {
     settleGame(game);
   } else {
-    pollInterval = setInterval(() => pollGame(game.id), 5000);
+    pollInterval = setInterval(() => pollGame(game.id), 2000);
   }
 }
 
@@ -800,7 +800,7 @@ async function pollGame(id) {
     const moves = g.moves ? g.moves.trim().split(' ').filter(Boolean) : [];
     if (moves.length !== moveNum) {
       moveNum = moves.length;
-      document.getElementById('move-tag').textContent = 'move ' + Math.ceil(moveNum / 2);
+      document.getElementById('move-tag').textContent = moveNum > 0 ? 'move ' + Math.ceil(moveNum / 2) : 'move —';
       updateMids(); renderBook(); renderCards();
     }
     if (g.status && !['started', 'created'].includes(g.status)) { clearInterval(pollInterval); settleGame(g); }
