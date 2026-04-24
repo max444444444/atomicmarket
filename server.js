@@ -279,7 +279,7 @@ app.post('/api/order', auth, (req, res) => {
     if (cost > user.balance) return res.status(400).json({ error: 'Insufficient balance' });
     user.balance -= cost;
 
-    const matchable = c.asks.filter(a => a.price <= price).sort((a, b) => a.price - b.price);
+    const matchable = c.asks.filter(a => a.price <= price && a.user !== username).sort((a, b) => a.price - b.price);
     let rem = shares;
     for (const ask of matchable) {
       if (rem <= 0) break;
@@ -314,7 +314,7 @@ app.post('/api/order', auth, (req, res) => {
       }
     }
 
-    const matchable = c.bids.filter(b => b.price >= price).sort((a, b) => b.price - a.price);
+    const matchable = c.bids.filter(b => b.price >= price && b.user !== username).sort((a, b) => b.price - a.price);
     let rem = shares;
     for (const bid of matchable) {
       if (rem <= 0) break;
